@@ -632,6 +632,8 @@ namespace Obeliskial_Content
             if (medsCardsSource.ContainsKey(text.Trait3B))
                 data.Trait3BCard = medsCardsSource[text.Trait3B];
             medsTexts[data.Id] = data.SubClassName;
+            if (text.AutoUnlock)
+                medsAutoUnlockHeroes.Add(text.ID);
             return data;
         }
 
@@ -1418,7 +1420,7 @@ namespace Obeliskial_Content
             data.SpritePortrait = GetSprite(text.SpritePortrait);
             data.SpritePortraitGrande = GetSprite(text.SpritePortraitGrande);
             data.SpriteSilueta = GetSprite(text.SpriteSilueta);
-            data.SpriteSiluetaGrande = GetSprite(text.SpriteSiluetaGrande);
+            data.SpriteSiluetaGrande = GetSprite(text.SpriteSiluetaGrande, "positionTop");
             data.SteamStat = text.SteamStat;
             return data;
         }

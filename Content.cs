@@ -15,7 +15,7 @@ namespace Obeliskial_Content
     [BepInProcess("AcrossTheObelisk.exe")]
     public class Content : BaseUnityPlugin
     {
-        internal const int ModDate = 20231020;
+        internal const int ModDate = 20231026;
         private readonly Harmony harmony = new(PluginInfo.PLUGIN_GUID);
         internal static ManualLogSource Log;
         public static Dictionary<string, CardData> medsCardsSource = new();
@@ -82,6 +82,7 @@ namespace Obeliskial_Content
         public static bool medsDoNotLetCombatFinish = false;
         public static Dictionary<string, CardData> medsExtendedEnchantments = new();
         public static string medsAwaitingKill = "";
+        public static List<string> medsAutoUnlockHeroes = new();
         public static ConfigEntry<bool> medsVanillaContentLog { get; private set; }
         private void Awake()
         {

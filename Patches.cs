@@ -42,6 +42,8 @@ namespace Obeliskial_Content
         private static void MainMenuManagerStartPostfix(ref MainMenuManager __instance)
         {
             AddModVersionText(PluginInfo.PLUGIN_NAME, PluginInfo.PLUGIN_VERSION, ModDate.ToString());
+            foreach (string subclassID in medsAutoUnlockHeroes)
+                PlayerManager.Instance.HeroUnlock(subclassID, true, false);
         }
 
         [HarmonyPrefix]
@@ -235,7 +237,6 @@ namespace Obeliskial_Content
                                 AudioClip ac = DownloadHandlerAudioClip.GetContent(www);
                                 ac.name = Path.GetFileNameWithoutExtension(f.Name);
                                 medsAudioClips[Path.GetFileNameWithoutExtension(f.Name)] = ac;
-                                LogDebug("Loading custom AudioClip: " + ac.name);
                                 customCount++;
                             }
                         }
@@ -286,6 +287,13 @@ namespace Obeliskial_Content
                 foreach (GameObject gObj in foundGOs)
                 {
                     if (medsVanillaContentLog.Value) { LogDebug("Loading vanilla gameObject: " + gObj.name); };
+                    if (medsGOs.ContainsKey(gObj.name))
+                    {
+                        int c1 = medsGOs[gObj.name].GetComponents(typeof(Component)).Count();
+                        int c2 = gObj.GetComponents(typeof(Component)).Count();
+                        if (c1 > c2)
+                            continue;
+                    }
                     medsGOs[gObj.name] = gObj;
                 }
                 vanillaCount = medsGOs.Count;
@@ -1615,16 +1623,14 @@ namespace Obeliskial_Content
             {
                 try
                 {
-                    LogDebug("late node-event: " + eID);
-                    LogDebug("mNE: " + medsNodeEvent[eID]);
                     string nodeID = medsNodeEvent[eID];
-                    LogDebug("nodeID: " + nodeID);
+                    LogDebug("late node-event: " + eID + " nodeID: " + nodeID);
                     if (nodeID != "")
                     {
 
                         if (medsNodeDataSource.ContainsKey(nodeID) && medsEventDataSource.ContainsKey(eID))
                         {
-                            LogDebug("late node-event 1: " + eID);
+                            //LogDebug("late node-event 1: " + eID);
                             bool eFound = false;
                             for (int a = 0; a < medsNodeDataSource[nodeID].NodeEvent.Length; a++)
                             {
@@ -1642,7 +1648,7 @@ namespace Obeliskial_Content
                                     break;
                                 }
                             }
-                            LogDebug("late node-event 2: " + eID);
+                            //LogDebug("late node-event 2: " + eID);
                             if (!eFound)
                             {
                                 int[] tempEventPercent = medsNodeDataSource[nodeID].NodeEventPercent;
@@ -3937,5 +3943,90 @@ namespace Obeliskial_Content
             yield return (object)Globals.Instance.WaitForSeconds(0.1f);
         }
 
+        /*[HarmonyPrefix]
+        [HarmonyPatch(typeof(MatchManager), "CreatePet")]
+        public static bool CreatePetPrefix(ref MatchManager __instance,
+            CardData cardPet,
+            GameObject charGO,
+            Hero _hero,
+            NPC _npc,
+            bool _fromEnchant = false,
+            int _enchantIndex = -1)
+        {
+            string n = "thePet";
+            int _medsEnchant = _enchantIndex;
+            if (_fromEnchant)
+                n = "thePetEnchantment" + _medsEnchant.ToString();
+            Transform transform = charGO.transform.Find(n);
+            LogDebug("0");
+            if ((UnityEngine.Object)transform != (UnityEngine.Object)null)
+            {
+                if (_fromEnchant)
+                    return false;
+                UnityEngine.Object.Destroy((UnityEngine.Object)transform.gameObject);
+            }
+            GameObject GO = UnityEngine.Object.Instantiate<GameObject>(cardPet.PetModel, Vector3.zero, Quaternion.identity, charGO.transform);
+            GO.name = n;
+            try
+            {
+                GO.GetComponent<BoxCollider2D>().enabled = false;
+            }
+            catch (Exception e) { LogError("No BoxCollider2D found on pet " + cardPet.CardName + " (" + e.Message + ") Probably not a real issue, don't stress if you see this."); }
+            LogDebug("1.5");
+            if (_hero != null && !_fromEnchant)
+            {
+                LogDebug("1.5a");
+                _hero.HeroItem.animPet = GO.GetComponent<Animator>();
+            }
+            else if (_npc != null)
+            {
+                LogDebug("1.5b");
+                _npc.NPCItem.animPet = GO.GetComponent<Animator>();
+            }
+            LogDebug("2");
+            GO.transform.localScale = new Vector3(GO.transform.localScale.x * cardPet.PetSize.x, GO.transform.localScale.y * cardPet.PetSize.y, GO.transform.localScale.z);
+            if (cardPet.PetInvert && _hero != null)
+                GO.transform.localScale = new Vector3(GO.transform.localScale.x * -1f, GO.transform.localScale.y, GO.transform.localScale.z);
+            GO.transform.localPosition = (Vector3)cardPet.PetOffset;
+            NPCItem npcItem = GO.AddComponent<NPCItem>();
+            LogDebug("3");
+            npcItem.SetOriginalLocalPosition(GO.transform.localPosition);
+            npcItem.GetSpritesFromAnimated(GO);
+            LogDebug("4");
+            if (!cardPet.PetFront)
+                npcItem.DeleteShadow(GO);
+            LogDebug("5");
+            if (_hero != null)
+            {
+                if (!_fromEnchant)
+                {
+                    _hero.HeroItem.PetItem = npcItem;
+                    _hero.HeroItem.PetItemFront = cardPet.PetFront;
+                }
+                else
+                {
+                    _hero.HeroItem.PetItemEnchantment = npcItem;
+                    _hero.HeroItem.PetItemEnchantmentFront = cardPet.PetFront;
+                }
+                _hero.HeroItem.DrawOrderSprites(false, _hero.Position * 2);
+            }
+            else
+            {
+                if (_npc == null)
+                    return false;
+                if (!_fromEnchant)
+                {
+                    _npc.NPCItem.PetItem = npcItem;
+                    _npc.NPCItem.PetItemFront = cardPet.PetFront;
+                }
+                else
+                {
+                    _npc.NPCItem.PetItemEnchantment = npcItem;
+                    _npc.NPCItem.PetItemEnchantmentFront = cardPet.PetFront;
+                }
+                _npc.NPCItem.DrawOrderSprites(false, _npc.Position * 2);
+            }
+            return false;
+        }*/
     }
 }
