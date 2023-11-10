@@ -1419,7 +1419,7 @@ namespace Obeliskial_Content
             data.Sku = text.Sku;
             data.SpritePortrait = GetSprite(text.SpritePortrait);
             data.SpritePortraitGrande = GetSprite(text.SpritePortraitGrande);
-            data.SpriteSilueta = GetSprite(text.SpriteSilueta);
+            data.SpriteSilueta = GetSprite(text.SpriteSilueta, "positionTop");
             data.SpriteSiluetaGrande = GetSprite(text.SpriteSiluetaGrande, "positionTop");
             data.SteamStat = text.SteamStat;
             return data;

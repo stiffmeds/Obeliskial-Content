@@ -2,11 +2,26 @@
 
 Enables custom content in Across the Obelisk.
 
-## Installation
+## Installation (manual)
 
-Install [BepInEx](https://across-the-obelisk.thunderstore.io/package/BepInEx/BepInExPack_AcrossTheObelisk/).
+1. Install [Obeliskial Essentials](https://across-the-obelisk.thunderstore.io/package/meds/Obeliskial_Essentials/).
+2. Click _Manual Download_ at the top of the page.
+3. In Steam, right-click Across the Obelisk and select _Manage_->_Browse local files_.
+4. Extract the archive into the game folder. 
+5. Run the game. If everything runs correctly, you will see this mod in the list of registered mods on the main menu.
+6. Press F5 to open/close the Config Manager and F1 to show/hide mod version information.
 
-Download the latest [release](https://github.com/stiffmeds/Obeliskial-Content/releases) and put it in your BepInEx _plugins_ folder.
+## Installation (automatic)
+
+1. Download and install [Thunderstore Mod Manager](https://www.overwolf.com/app/Thunderstore-Thunderstore_Mod_Manager) or [r2modman](https://across-the-obelisk.thunderstore.io/package/ebkr/r2modman/).
+2. Click **Install with Mod Manager** button on top of the page.
+3. Run the game via the mod manager.
+
+## Creating Content
+
+[Custom Card/Item Creator](https://code.secretsisters.gay/AtO_Custom)
+
+More content creation guides coming Soon™.
 
 ## Support
 
