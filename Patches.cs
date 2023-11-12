@@ -1642,6 +1642,7 @@ namespace Obeliskial_Content
                                     //LogDebug("late node-event 1: " + eID + " " + a);
                                     medsNodeDataSource[nodeID].NodeEvent[a] = Globals.Instance.GetEventData(eID);
                                     //LogDebug("NodeEvent%Count: " + medsNodeDataSource[nodeID].NodeEventPercent.Length);
+                                    //LogDebug("checking events: " + eID + ": " + medsNodeEventPercent.ContainsKey(eID));
                                     if (medsNodeDataSource[nodeID].NodeEventPercent.Length > a)
                                         medsNodeDataSource[nodeID].NodeEventPercent[a] = medsNodeEventPercent.ContainsKey(eID) ? medsNodeEventPercent[eID] : 100;
                                     if (medsNodeDataSource[nodeID].NodeEventPriority.Length > a)
@@ -1667,8 +1668,8 @@ namespace Obeliskial_Content
                                 else if (tempEvent.Length == 1)
                                 {
                                     //LogDebug("late node-event 2a2");
-                                    tempEventPercent = new int[] { 100 };
-                                    tempEventPriority = new int[] { 0 };
+                                    tempEventPercent = medsNodeDataSource[nodeID].NodeEventPercent.Length == 1 ? medsNodeDataSource[nodeID].NodeEventPercent : new int[] { 100 };
+                                    tempEventPriority = medsNodeDataSource[nodeID].NodeEventPriority.Length == 1 ? medsNodeDataSource[nodeID].NodeEventPriority : new int[] { 0 };
                                     Array.Resize(ref tempEvent, tempEvent.Length + 1);
                                     Array.Resize(ref tempEventPercent, tempEvent.Length);
                                     Array.Resize(ref tempEventPriority, tempEvent.Length);
@@ -1733,6 +1734,7 @@ namespace Obeliskial_Content
                 try
                 {
                     int nodePercent = 0;
+                    //LogDebug("NODEVENTPERCENTS for " + nodeID + ": " + String.Join(", ", medsNodeDataSource[nodeID].NodeEventPercent));
                     for (int a = 0; a < medsNodeDataSource[nodeID].NodeEventPercent.Length; a++)
                         nodePercent += medsNodeDataSource[nodeID].NodeEventPercent[a];
                     //LogDebug("nodePercent: " + nodePercent);
