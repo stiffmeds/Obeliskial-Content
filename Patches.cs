@@ -913,6 +913,7 @@ namespace Obeliskial_Content
              *    88       d8'          `8b  `"Y8888Y"'   88       Y8b  88888888Y"'  d8'          `8b  88  d8'          `8b  
              */
             LogInfo("Loading PackData...");
+            medsSecondRunImport2 = new();
             // vanilla 
             for (int index = 0; index < packDataArray.Length; ++index)
             {
@@ -974,6 +975,16 @@ namespace Obeliskial_Content
             }
             // save vanilla+custom
             Traverse.Create(Globals.Instance).Field("_SubClassSource").SetValue(medsSubClassesSource);
+
+            // connect obelisk challenge packs to subclasses
+            LogDebug("pack-subclass binding commenced...");
+            foreach (string packID in medsSecondRunImport2.Keys)
+            {
+                string subclassID = medsSecondRunImport2[packID].ToLower().Trim();
+                if (medsSubClassesSource.ContainsKey(subclassID) && medsPackDataSource.ContainsKey(packID))
+                    medsPackDataSource[packID].RequiredClass = medsSubClassesSource[subclassID];
+            }
+            Traverse.Create(Globals.Instance).Field("_PackDataSource").SetValue(medsPackDataSource);
 
             LogInfo("Subclasses loaded!");
             LogInfo("Creating subclass text...");
