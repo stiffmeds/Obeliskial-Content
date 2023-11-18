@@ -2363,6 +2363,7 @@ namespace Obeliskial_Content
                 string cardInDictionary1 = MatchManager.Instance.CreateCardInDictionary("binkssmoothoperator");
                 CardData _card = MatchManager.Instance.GetCardData(cardInDictionary1);
                 string[] _cards = Globals.Instance.CardListByType[Enums.CardType.Skill].ToArray();
+                UnityEngine.Random.InitState((AtOManager.Instance.currentMapNode + AtOManager.Instance.GetGameId() + _character.Id + MatchManager.Instance.GetCurrentRound().ToString()).GetDeterministicHashCode());
                 _card.AddCardList = new CardData[5];
                 _card.AddCardList[0] = Globals.Instance.GetCardData(_cards[UnityEngine.Random.Range(0, _cards.Count())]);
                 _card.AddCardList[1] = Globals.Instance.GetCardData(_cards[UnityEngine.Random.Range(0, _cards.Count())]);
