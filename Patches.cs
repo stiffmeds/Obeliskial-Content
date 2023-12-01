@@ -21,6 +21,8 @@ using static Obeliskial_Content.DataTextConvert;
 using static Obeliskial_Essentials.DataTextConvert;
 using static Obeliskial_Content.Content;
 using Obeliskial_Essentials;
+using static Enums;
+using UnityEngine.TextCore.Text;
 
 namespace Obeliskial_Content
 {
@@ -2062,7 +2064,7 @@ namespace Obeliskial_Content
             //LogDebug("FINAL RESULT : " + string.Join(Environment.NewLine, __result));
             return;
         }
-        public static string[] medsTraitList = {"charlspacemaker", "charlsdruidicduality", "charlslifeinsurance", "hanshekcrepuscular", "hanshekdarkdesigns", "hanshekvengeance", "hanshekunwillingsacrifice", "binkssharpshooter", "binksrangedspecialist", "binkssmoothoperator" };
+        public static string[] medsTraitList = { "charlspacemaker", "charlsdruidicduality", "charlslifeinsurance", "hanshekcrepuscular", "hanshekdarkdesigns", "hanshekvengeance", "hanshekunwillingsacrifice", "binkssharpshooter", "binksrangedspecialist", "binkssmoothoperator", "dgolemmagnuswelltrained", "randomalityzealotry", "tulataunting" };
 
         public static void medsDoTrait(string _trait, ref Trait __instance)
         {
@@ -2375,6 +2377,17 @@ namespace Obeliskial_Content
                 MatchManager.Instance.ItemTraitActivated();
                 return;
             }
+            else if (_trait == "dgolemmagnuswelltrained")
+            {
+                _character.SetAuraTrait(_character, "block", 6);
+                _character.SetAuraTrait(_character, "powerful", 1);
+                if (_character.HeroItem != null)
+                {
+                    _character.HeroItem.ScrollCombatText(Texts.Instance.GetText("traits_Well Trained"), Enums.CombatScrollEffectType.Trait);
+                    EffectsManager.Instance.PlayEffectAC("reinforce", true, _character.HeroItem.CharImageT, false);
+                }
+                return;
+            }
         }
 
         /* now unnecessary? I can't keep up pls stop it Hans
@@ -2416,6 +2429,16 @@ namespace Obeliskial_Content
             return "<br><color=#FFF>" + cCharges.ToString() + "/" + cTotal.ToString() + "</color>";
         }
 
+        [HarmonyPrefix]
+        [HarmonyPatch(typeof(Character), "SetEvent")]
+        public static void SetEventPrefix(ref Character __instance, ref EventActivation theEvent, Character target = null)
+        {
+            /* nvm it was Magic Archer Sylvie being active on one PC and not the other :D
+            if (theEvent == EventActivation.BeginTurn && __instance.IsHero && __instance.HeroData != null && __instance.HeroData.HeroSubClass != null && __instance.HeroData.HeroSubClass.SubClassName.ToLower() == "hunter")
+            { // binks RNG desync fix?
+                UnityEngine.Random.InitState((AtOManager.Instance.currentMapNode + AtOManager.Instance.GetGameId() + __instance.HeroData.HeroSubClass.Id + MatchManager.Instance.GetCurrentRound().ToString() + (AtOManager.Instance.GetCurrentCombatData() != null ? AtOManager.Instance.GetCurrentCombatData().CombatId : "")).GetDeterministicHashCode());
+            }*/
+        }
 
         [HarmonyPrefix]
         [HarmonyPatch(typeof(MapManager), "Awake")]
@@ -3689,6 +3712,15 @@ namespace Obeliskial_Content
                 __result.AuraDamageIncreasedPerStack = 2f;
                 __result.AuraDamageType = Enums.DamageType.Piercing;
                 __result.Removable = false;
+            }
+            if (_characterTarget != null && _characterTarget.IsHero && _acId == "taunt" && _type == "set" && __instance.CharacterHaveTrait(_characterTarget.SubclassName, "tulataunting"))
+            { // taunt on this character can stack
+                __result.GainCharges = true;
+            }
+            if (_characterTarget != null && _characterTarget.IsHero && _acId == "zeal" && _type == "set" && __instance.CharacterHaveTrait(_characterTarget.SubclassName, "randomalityzealotry"))
+            {
+                __result.GainCharges = true;
+                __result.AuraDamageIncreasedPercentPerStack = 1.5f;
             }
         }
 

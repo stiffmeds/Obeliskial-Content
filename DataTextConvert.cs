@@ -634,6 +634,8 @@ namespace Obeliskial_Content
             medsTexts[data.Id] = data.SubClassName;
             if (text.AutoUnlock)
                 medsAutoUnlockHeroes.Add(text.ID);
+            // data.InitialUnlock = text.AutoUnlock; // #XMAS
+            // data.SourceCharacterName = text.SourceCharacterName; // #XMAS
             return data;
         }
 
@@ -894,6 +896,7 @@ namespace Obeliskial_Content
                 data.NPCList[a] = medsNPCsSource.ContainsKey(text.NPCList[a]) ? medsNPCsSource[text.NPCList[a]] : (NPCData)null;
             data.NpcRemoveInMadness0Index = text.NPCRemoveInMadness0Index;
             data.ThermometerTierData = medsThermometerTierData.ContainsKey(text.ThermometerTierData) ? medsThermometerTierData[text.ThermometerTierData] : (ThermometerTierData)null;
+            // data.IsRift = text.IsRift; // #XMAS
             return data;
         }
         public static CombatEffect ToData(CombatEffectText text)
