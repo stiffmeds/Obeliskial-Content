@@ -23,6 +23,7 @@ using static Obeliskial_Content.Content;
 using Obeliskial_Essentials;
 using static Enums;
 using UnityEngine.TextCore.Text;
+using UnityEngine.InputSystem;
 
 namespace Obeliskial_Content
 {
@@ -42,9 +43,6 @@ namespace Obeliskial_Content
         [HarmonyPatch(typeof(MainMenuManager), "Start")]
         private static void MainMenuManagerStartPostfix(ref MainMenuManager __instance)
         {
-            AddModVersionText(PluginInfo.PLUGIN_NAME, PluginInfo.PLUGIN_VERSION, ModDate.ToString());
-            foreach (string[] modVersion in medsModPackVersions)
-                AddModVersionText(modVersion[0], modVersion[1], modVersion[2]);
             foreach (string subclassID in medsAutoUnlockHeroes)
                 PlayerManager.Instance.HeroUnlock(subclassID, true, false);
         }
@@ -152,45 +150,76 @@ namespace Obeliskial_Content
 
 
             // basically just work your way down this list, importing your custom versions at the same time?
-            FileInfo[] medsFI;
             Texture2D spriteTexture = new Texture2D(2, 2);
+            FolderCreate(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", "TESTING", "sprite"));
+            FolderCreate(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", "TESTING", "audio"));
+            FolderCreate(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", "TESTING", "gameObject"));
+            FolderCreate(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", "TESTING", "subclass"));
+            FolderCreate(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", "TESTING", "trait"));
+            FolderCreate(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", "TESTING", "card"));
+            FolderCreate(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", "TESTING", "perk"));
+            FolderCreate(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", "TESTING", "npc"));
+            FolderCreate(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", "TESTING", "node"));
+            FolderCreate(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", "TESTING", "loot"));
+            FolderCreate(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", "TESTING", "auraCurse"));
+            FolderCreate(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", "TESTING", "perkNode"));
+            FolderCreate(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", "TESTING", "challengeData"));
+            FolderCreate(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", "TESTING", "challengeTrait"));
+            FolderCreate(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", "TESTING", "combatData"));
+            FolderCreate(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", "TESTING", "event"));
+            FolderCreate(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", "TESTING", "eventReply"));
+            FolderCreate(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", "TESTING", "eventRequirement"));
+            FolderCreate(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", "TESTING", "zone"));
+            FolderCreate(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", "TESTING", "pack"));
+            FolderCreate(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", "TESTING", "cardPlayerPack"));
+            FolderCreate(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", "TESTING", "skin"));
+            FolderCreate(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", "TESTING", "cardback"));
+            FolderCreate(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", "TESTING", "keyNote"));
+            FolderCreate(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", "TESTING", "corruptionPack"));
+            FolderCreate(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", "TESTING", "cardPlayerPack"));
+            FolderCreate(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", "TESTING", "pairsPack"));
+            FolderCreate(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", "TESTING", "cinematic"));
+            FolderCreate(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", "TESTING", "tierReward"));
+            FolderCreate(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", "TESTING", "roadsTXT"));
+            FolderCreate(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", "TESTING", "prestigeDeck"));
+
+            medsModFolderNames.Add("TESTING");
+            FileInfo[] medsFI = new DirectoryInfo(Path.Combine(Paths.ConfigPath, "Obeliskial_importing")).GetFiles("*.json");
+            foreach (FileInfo f in medsFI)
+            {
+                try
+                {
+                    LogDebug("Loading mod metadata: " + f.Name);
+                    Mod medsMod = JsonUtility.FromJson<Mod>(File.ReadAllText(f.ToString()));
+                    bool bTypeContent = false;
+                    foreach (string t in medsMod.Type)
+                    {
+                        if (t.ToLower() == "content")
+                        {
+                            bTypeContent = true;
+                            break;
+                        }
+                    }
+                    if (!bTypeContent)
+                    {
+                        string[] newType = new string[medsMod.Type.Length + 1];
+                        newType[0] = "content";
+                        medsMod.Type.CopyTo(newType, 1);
+                        medsMod.Type = newType;
+                    }
+                    if (medsMod.FolderName.IsNullOrWhiteSpace())
+                        medsMod.FolderName = medsMod.Name;
+                    if (!medsModFolderNames.Contains(medsMod.FolderName))
+                        medsModFolderNames.Add(medsMod.FolderName);
+                    RegisterMod(medsMod);
+                }
+                catch (Exception e) { LogError("Error loading mod metadata: " + e.Message); }
+            }
+
+            // default sprites
+            LogInfo("Loading default sprites...");
             try
             {
-                FolderCreate(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", "sprite"));
-                FolderCreate(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", "audio"));
-                FolderCreate(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", "gameObject"));
-                FolderCreate(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", "subclass"));
-                FolderCreate(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", "trait"));
-                FolderCreate(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", "card"));
-                FolderCreate(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", "perk"));
-                FolderCreate(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", "npc"));
-                FolderCreate(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", "node"));
-                FolderCreate(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", "loot"));
-                FolderCreate(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", "auraCurse"));
-                FolderCreate(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", "perkNode"));
-                FolderCreate(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", "challengeData"));
-                FolderCreate(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", "challengeTrait"));
-                FolderCreate(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", "combatData"));
-                FolderCreate(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", "event"));
-                FolderCreate(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", "eventReply"));
-                FolderCreate(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", "eventRequirement"));
-                FolderCreate(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", "zone"));
-                FolderCreate(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", "pack"));
-                FolderCreate(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", "cardPlayerPack"));
-                FolderCreate(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", "skin"));
-                FolderCreate(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", "cardback"));
-                FolderCreate(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", "keyNote"));
-                FolderCreate(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", "corruptionPack"));
-                FolderCreate(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", "cardPlayerPack"));
-                FolderCreate(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", "pairsPack"));
-                FolderCreate(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", "cinematic"));
-                FolderCreate(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", "tierReward"));
-                FolderCreate(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", "roadsTXT"));
-                FolderCreate(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", "prestigeDeck"));
-                FolderCreate(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", "!version"));
-
-                // load default sprites
-                LogInfo("Loading default sprites...");
                 // auraCurse
                 spriteTexture = new Texture2D(2, 2);
                 byte[] medsDefaultSprite = new byte[] { 137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 13, 73, 72, 68, 82, 0, 0, 0, 44, 0, 0, 0, 44, 8, 6, 0, 0, 0, 30, 132, 90, 1, 0, 0, 0, 1, 115, 82, 71, 66, 0, 174, 206, 28, 233, 0, 0, 0, 4, 103, 65, 77, 65, 0, 0, 177, 143, 11, 252, 97, 5, 0, 0, 0, 9, 112, 72, 89, 115, 0, 0, 14, 195, 0, 0, 14, 195, 1, 199, 111, 168, 100, 0, 0, 12, 227, 73, 68, 65, 84, 88, 71, 189, 89, 107, 140, 93, 213, 121, 93, 231, 117, 207, 185, 247, 158, 123, 231, 206, 120, 222, 30, 63, 198, 134, 169, 29, 202, 0, 33, 32, 8, 15, 213, 68, 38, 37, 73, 69, 74, 67, 91, 151, 54, 52, 85, 129, 150, 63, 169, 84, 161, 162, 182, 42, 18, 170, 210, 42, 137, 104, 213, 18, 245, 103, 132, 82, 135, 84, 80, 242, 80, 105, 129, 212, 24, 28, 8, 15, 67, 235, 215, 96, 155, 177, 241, 120, 30, 246, 60, 238, 157, 59, 247, 125, 158, 123, 119, 237, 59, 51, 182, 3, 243, 174, 218, 53, 179, 117, 206, 156, 179, 207, 217, 107, 175, 239, 219, 223, 247, 237, 51, 248, 63, 128, 198, 102, 177, 57, 108, 41, 54, 87, 181, 174, 174, 174, 244, 19, 79, 60, 161, 11, 33, 52, 54, 117, 188, 178, 25, 107, 105, 124, 79, 243, 229, 27, 66, 111, 95, 247, 85, 217, 214, 92, 11, 79, 187, 123, 251, 119, 236, 204, 100, 178, 3, 78, 218, 221, 97, 59, 118, 167, 105, 89, 142, 161, 233, 38, 52, 205, 212, 116, 205, 208, 56, 76, 20, 199, 113, 173, 90, 47, 248, 158, 63, 23, 4, 129, 55, 53, 122, 254, 63, 138, 133, 162, 215, 181, 185, 183, 211, 118, 172, 146, 95, 111, 204, 205, 230, 11, 195, 31, 28, 57, 114, 116, 126, 132, 79, 66, 215, 245, 248, 19, 132, 57, 147, 143, 95, 107, 254, 189, 99, 199, 246, 157, 87, 93, 119, 195, 30, 33, 197, 77, 213, 82, 105, 199, 192, 117, 55, 220, 106, 57, 9, 155, 211, 214, 83, 217, 22, 104, 186, 206, 166, 129, 252, 230, 159, 144, 18, 146, 39, 66, 200, 203, 141, 215, 226, 72, 240, 190, 134, 194, 196, 8, 2, 63, 132, 219, 209, 5, 211, 52, 144, 73, 39, 49, 242, 193, 137, 31, 253, 219, 179, 207, 126, 69, 141, 183, 20, 154, 132, 73, 80, 231, 249, 146, 74, 239, 218, 181, 171, 53, 211, 209, 126, 119, 182, 189, 227, 247, 58, 251, 182, 221, 153, 202, 100, 83, 138, 70, 163, 92, 68, 231, 230, 45, 72, 88, 22, 44, 203, 128, 209, 212, 16, 136, 69, 68, 194, 36, 173, 55, 173, 135, 40, 138, 169, 172, 224, 145, 79, 145, 172, 32, 215, 144, 215, 212, 185, 97, 154, 8, 194, 8, 190, 31, 240, 24, 34, 149, 180, 49, 125, 246, 212, 55, 126, 178, 127, 255, 95, 53, 31, 94, 2, 139, 132, 231, 223, 254, 49, 236, 218, 189, 107, 160, 111, 240, 250, 151, 90, 59, 123, 182, 166, 221, 12, 172, 68, 2, 6, 21, 84, 228, 108, 158, 39, 72, 52, 97, 153, 205, 163, 101, 234, 188, 199, 89, 43, 149, 57, 33, 245, 27, 83, 81, 69, 46, 138, 37, 9, 11, 170, 171, 68, 215, 16, 146, 164, 186, 30, 70, 234, 168, 38, 19, 33, 226, 76, 34, 175, 142, 51, 255, 245, 206, 239, 190, 243, 218, 235, 63, 88, 160, 176, 20, 154, 234, 46, 9, 221, 208, 164, 219, 146, 235, 54, 18, 201, 166, 98, 22, 25, 217, 84, 52, 105, 219, 72, 38, 76, 158, 147, 48, 137, 38, 19, 234, 154, 137, 116, 210, 65, 107, 26, 200, 101, 76, 184, 41, 11, 57, 215, 65, 91, 214, 69, 150, 166, 118, 83, 14, 239, 219, 72, 57, 156, 40, 159, 165, 17, 154, 77, 89, 67, 91, 176, 72, 117, 182, 24, 142, 15, 159, 57, 182, 48, 252, 178, 88, 150, 176, 136, 100, 158, 98, 22, 140, 166, 116, 234, 197, 84, 145, 231, 22, 253, 45, 65, 133, 29, 59, 129, 20, 143, 233, 4, 73, 186, 46, 122, 210, 117, 108, 118, 125, 164, 77, 7, 142, 78, 146, 52, 121, 78, 247, 145, 50, 28, 36, 52, 94, 51, 109, 78, 90, 145, 85, 239, 82, 230, 53, 216, 20, 89, 29, 146, 10, 235, 166, 94, 54, 77, 179, 176, 48, 252, 178, 88, 150, 240, 190, 125, 251, 202, 34, 138, 167, 213, 11, 149, 43, 152, 100, 111, 146, 112, 211, 111, 13, 139, 164, 82, 72, 32, 131, 118, 221, 194, 96, 78, 71, 143, 213, 137, 70, 113, 55, 226, 201, 86, 200, 11, 41, 136, 169, 110, 36, 230, 218, 224, 206, 5, 64, 217, 133, 17, 184, 48, 5, 73, 179, 191, 109, 42, 247, 210, 249, 190, 121, 111, 12, 163, 80, 45, 246, 137, 123, 239, 189, 119, 53, 194, 218, 178, 62, 172, 240, 165, 7, 30, 120, 190, 109, 203, 206, 47, 39, 29, 101, 78, 155, 110, 96, 82, 213, 36, 28, 35, 9, 59, 38, 1, 223, 69, 154, 97, 182, 47, 25, 163, 84, 114, 81, 45, 153, 144, 245, 42, 108, 90, 163, 92, 35, 57, 229, 78, 40, 160, 156, 229, 72, 25, 31, 34, 85, 67, 77, 159, 131, 39, 171, 240, 34, 15, 94, 24, 96, 174, 82, 107, 250, 113, 105, 98, 228, 95, 95, 252, 254, 254, 223, 90, 24, 122, 57, 200, 21, 9, 223, 125, 223, 125, 127, 221, 51, 112, 205, 227, 73, 71, 249, 160, 67, 101, 28, 164, 244, 12, 236, 32, 11, 171, 210, 6, 92, 108, 131, 56, 209, 14, 148, 116, 70, 142, 20, 194, 134, 14, 61, 226, 194, 11, 104, 250, 152, 71, 154, 158, 35, 32, 117, 219, 24, 132, 35, 97, 94, 59, 3, 63, 149, 71, 195, 41, 192, 211, 42, 168, 248, 101, 148, 171, 117, 46, 200, 24, 249, 115, 195, 79, 190, 252, 252, 115, 79, 46, 12, 189, 28, 228, 178, 46, 161, 80, 154, 157, 61, 45, 104, 46, 229, 191, 154, 164, 207, 133, 22, 180, 106, 6, 184, 208, 137, 240, 240, 22, 212, 223, 216, 140, 242, 225, 78, 184, 78, 7, 110, 249, 106, 26, 15, 124, 47, 137, 71, 223, 117, 240, 219, 47, 152, 216, 251, 45, 13, 87, 125, 17, 176, 93, 29, 213, 215, 183, 193, 123, 185, 31, 193, 107, 219, 129, 169, 118, 24, 116, 21, 61, 76, 50, 148, 40, 173, 24, 87, 68, 12, 191, 86, 25, 154, 31, 117, 101, 172, 168, 112, 79, 119, 207, 174, 193, 59, 247, 28, 238, 191, 230, 218, 100, 38, 225, 34, 17, 182, 32, 89, 236, 133, 117, 146, 131, 191, 210, 143, 76, 15, 112, 245, 151, 52, 252, 242, 62, 13, 93, 215, 107, 72, 182, 206, 63, 71, 193, 160, 242, 135, 194, 201, 31, 10, 28, 126, 90, 98, 252, 231, 140, 203, 30, 195, 226, 206, 34, 226, 59, 79, 193, 235, 24, 199, 156, 62, 142, 74, 92, 65, 28, 84, 194, 225, 183, 15, 221, 244, 206, 207, 223, 61, 161, 172, 178, 18, 86, 84, 184, 167, 187, 247, 130, 148, 113, 193, 107, 120, 84, 65, 153, 154, 33, 65, 153, 158, 100, 83, 29, 192, 237, 127, 169, 227, 87, 255, 81, 199, 246, 61, 151, 201, 42, 44, 146, 85, 216, 253, 235, 58, 190, 122, 64, 199, 13, 15, 49, 235, 49, 64, 199, 103, 217, 113, 38, 7, 20, 91, 160, 251, 140, 131, 84, 89, 70, 209, 116, 117, 174, 62, 38, 153, 88, 86, 131, 34, 204, 144, 190, 52, 30, 249, 163, 71, 170, 188, 59, 173, 242, 152, 74, 4, 160, 127, 74, 250, 167, 48, 99, 92, 255, 53, 13, 55, 61, 202, 200, 97, 47, 116, 190, 132, 165, 94, 167, 225, 238, 111, 235, 248, 165, 95, 163, 194, 54, 239, 31, 218, 1, 109, 154, 101, 136, 199, 144, 167, 219, 8, 107, 245, 99, 175, 190, 114, 162, 180, 44, 145, 43, 176, 162, 194, 15, 61, 244, 176, 160, 137, 78, 50, 65, 49, 46, 71, 164, 162, 126, 152, 149, 72, 120, 211, 0, 21, 163, 233, 23, 49, 249, 223, 18, 63, 122, 80, 224, 31, 118, 8, 236, 255, 124, 140, 35, 223, 101, 10, 159, 93, 184, 73, 24, 52, 206, 221, 223, 214, 144, 163, 27, 139, 178, 13, 109, 54, 11, 217, 176, 17, 251, 228, 93, 11, 142, 215, 203, 205, 82, 100, 85, 172, 72, 88, 249, 83, 163, 86, 57, 38, 98, 149, 62, 35, 196, 26, 155, 237, 115, 240, 16, 135, 191, 35, 240, 209, 43, 18, 179, 103, 100, 147, 220, 75, 127, 34, 48, 244, 3, 137, 226, 57, 13, 231, 14, 0, 47, 252, 129, 192, 191, 63, 26, 99, 118, 248, 178, 110, 106, 146, 253, 119, 105, 76, 62, 180, 67, 201, 129, 168, 51, 85, 51, 172, 53, 138, 193, 251, 42, 133, 175, 204, 102, 30, 43, 119, 33, 97, 191, 86, 61, 18, 248, 62, 188, 152, 69, 138, 206, 16, 228, 86, 161, 111, 174, 96, 140, 138, 254, 244, 79, 5, 94, 254, 186, 192, 129, 199, 5, 70, 14, 209, 220, 237, 30, 114, 55, 207, 32, 59, 88, 129, 221, 18, 225, 253, 127, 1, 142, 127, 159, 54, 185, 194, 18, 125, 159, 213, 224, 118, 211, 187, 230, 52, 228, 199, 166, 112, 250, 205, 83, 207, 223, 177, 229, 235, 7, 104, 192, 53, 43, 188, 172, 235, 40, 133, 11, 19, 19, 195, 182, 133, 26, 75, 24, 120, 168, 34, 72, 204, 65, 220, 53, 4, 231, 214, 49, 228, 243, 85, 156, 57, 86, 66, 212, 57, 139, 150, 219, 166, 144, 254, 204, 56, 172, 109, 117, 196, 153, 6, 116, 186, 128, 193, 25, 215, 153, 187, 24, 21, 47, 33, 201, 240, 173, 22, 165, 168, 177, 194, 111, 116, 253, 116, 223, 246, 103, 191, 177, 179, 247, 230, 56, 14, 231, 239, 179, 144, 91, 17, 171, 26, 225, 177, 199, 254, 108, 252, 189, 87, 255, 243, 205, 83, 71, 223, 195, 197, 201, 51, 240, 237, 34, 130, 76, 30, 242, 246, 147, 72, 62, 120, 20, 185, 125, 103, 144, 249, 194, 40, 220, 59, 39, 145, 222, 62, 3, 221, 9, 16, 21, 146, 136, 102, 44, 48, 239, 129, 89, 184, 57, 241, 69, 48, 193, 97, 238, 188, 68, 162, 209, 50, 183, 219, 248, 205, 231, 216, 41, 226, 132, 100, 138, 46, 205, 34, 78, 25, 117, 69, 172, 74, 248, 145, 135, 31, 22, 174, 101, 223, 63, 51, 62, 250, 228, 133, 241, 115, 241, 84, 254, 12, 66, 183, 136, 176, 109, 26, 90, 119, 126, 190, 181, 81, 117, 51, 96, 36, 201, 32, 158, 176, 209, 24, 82, 185, 88, 98, 247, 125, 26, 238, 96, 232, 91, 132, 82, 113, 102, 72, 162, 174, 7, 34, 217, 218, 250, 42, 239, 212, 13, 27, 126, 130, 143, 37, 153, 143, 84, 252, 94, 45, 82, 176, 182, 209, 87, 238, 195, 41, 191, 245, 214, 219, 181, 161, 195, 71, 158, 156, 60, 247, 225, 183, 206, 143, 126, 132, 82, 245, 34, 23, 95, 3, 177, 83, 67, 8, 250, 54, 83, 178, 87, 180, 49, 119, 170, 13, 133, 215, 55, 179, 52, 149, 24, 124, 16, 184, 247, 187, 26, 28, 134, 220, 69, 76, 29, 145, 56, 250, 140, 228, 102, 79, 23, 90, 171, 252, 64, 183, 101, 222, 202, 160, 154, 237, 68, 172, 88, 176, 30, 250, 5, 107, 44, 133, 85, 21, 86, 80, 47, 82, 43, 219, 53, 204, 191, 171, 215, 42, 227, 83, 147, 23, 224, 7, 1, 26, 245, 24, 65, 217, 130, 63, 145, 69, 237, 39, 253, 240, 222, 105, 167, 74, 58, 110, 255, 11, 141, 100, 13, 216, 217, 203, 163, 151, 199, 36, 222, 248, 27, 129, 153, 179, 64, 208, 94, 56, 205, 234, 114, 194, 112, 49, 197, 4, 228, 229, 186, 17, 103, 115, 52, 201, 26, 176, 38, 194, 10, 106, 225, 28, 31, 58, 85, 40, 231, 103, 190, 89, 152, 158, 97, 184, 243, 224, 87, 13, 248, 147, 73, 4, 135, 182, 33, 26, 205, 64, 84, 18, 184, 135, 153, 239, 246, 199, 127, 241, 181, 229, 113, 90, 233, 41, 137, 227, 63, 164, 91, 108, 229, 100, 115, 197, 159, 233, 105, 124, 148, 216, 132, 217, 220, 86, 120, 237, 61, 144, 44, 149, 87, 85, 87, 97, 205, 132, 155, 160, 6, 155, 28, 247, 153, 192, 243, 207, 53, 84, 89, 88, 55, 16, 49, 9, 200, 15, 55, 49, 54, 75, 236, 253, 166, 134, 235, 31, 100, 246, 99, 93, 179, 216, 159, 5, 25, 94, 98, 232, 123, 243, 239, 185, 143, 235, 40, 163, 186, 227, 116, 131, 233, 237, 253, 68, 27, 70, 179, 91, 180, 114, 207, 213, 136, 54, 245, 104, 194, 82, 139, 115, 13, 108, 22, 187, 172, 201, 28, 10, 7, 95, 125, 187, 150, 74, 165, 14, 52, 234, 62, 23, 17, 131, 157, 175, 35, 230, 130, 219, 190, 7, 184, 238, 247, 89, 224, 115, 241, 44, 98, 250, 132, 108, 102, 189, 147, 47, 144, 172, 203, 250, 247, 211, 195, 168, 167, 39, 10, 45, 237, 109, 71, 211, 125, 200, 247, 94, 3, 191, 119, 167, 38, 210, 106, 141, 174, 81, 186, 245, 41, 76, 147, 153, 22, 85, 171, 54, 14, 52, 55, 152, 36, 172, 182, 239, 177, 17, 163, 239, 22, 46, 48, 14, 188, 136, 179, 175, 8, 124, 111, 175, 192, 249, 119, 5, 52, 135, 75, 243, 179, 195, 8, 122, 46, 162, 102, 141, 94, 236, 232, 111, 31, 235, 189, 78, 171, 111, 185, 6, 97, 71, 31, 221, 129, 113, 121, 45, 238, 160, 176, 46, 194, 42, 19, 113, 115, 171, 133, 115, 225, 209, 216, 247, 26, 17, 83, 182, 34, 12, 18, 30, 126, 81, 226, 252, 33, 101, 40, 137, 145, 215, 36, 51, 160, 68, 101, 138, 68, 62, 197, 162, 253, 158, 99, 8, 183, 142, 33, 200, 78, 162, 20, 159, 159, 238, 30, 212, 42, 219, 6, 17, 246, 13, 104, 50, 193, 226, 105, 225, 171, 192, 154, 176, 46, 194, 138, 142, 226, 247, 135, 247, 63, 53, 26, 122, 226, 67, 6, 163, 230, 214, 93, 119, 5, 198, 223, 3, 126, 252, 53, 129, 167, 7, 4, 158, 251, 13, 129, 217, 15, 73, 118, 107, 25, 209, 230, 60, 162, 214, 60, 194, 220, 12, 202, 241, 4, 243, 101, 101, 172, 255, 70, 4, 91, 6, 52, 145, 164, 175, 171, 8, 180, 30, 44, 118, 95, 147, 15, 171, 15, 33, 52, 157, 236, 202, 14, 74, 209, 48, 135, 100, 200, 13, 234, 108, 6, 26, 23, 94, 146, 238, 208, 251, 25, 13, 215, 254, 142, 134, 182, 171, 25, 186, 216, 87, 109, 125, 226, 116, 5, 81, 154, 233, 59, 81, 131, 150, 20, 156, 99, 80, 28, 184, 81, 19, 25, 198, 231, 166, 223, 174, 209, 21, 22, 177, 62, 151, 96, 239, 106, 73, 106, 33, 235, 31, 35, 76, 78, 168, 226, 91, 207, 187, 208, 189, 4, 118, 126, 30, 248, 226, 63, 49, 164, 253, 185, 142, 207, 253, 173, 142, 109, 55, 51, 13, 87, 89, 71, 235, 116, 27, 131, 165, 41, 221, 198, 178, 19, 106, 59, 84, 177, 157, 121, 178, 107, 245, 219, 43, 177, 46, 194, 106, 0, 175, 74, 115, 112, 29, 89, 34, 153, 151, 17, 9, 89, 17, 23, 155, 196, 150, 219, 88, 133, 113, 203, 164, 234, 222, 222, 27, 185, 159, 251, 2, 235, 229, 144, 213, 4, 149, 86, 197, 191, 250, 60, 165, 169, 207, 85, 81, 84, 81, 60, 55, 66, 86, 161, 73, 120, 213, 244, 188, 0, 229, 18, 205, 239, 104, 116, 93, 19, 214, 172, 98, 35, 205, 16, 150, 250, 226, 211, 127, 153, 129, 42, 39, 11, 244, 97, 51, 226, 246, 135, 111, 22, 172, 117, 213, 135, 64, 181, 64, 89, 170, 206, 174, 86, 145, 173, 132, 117, 41, 172, 212, 98, 70, 146, 220, 22, 73, 45, 50, 102, 98, 221, 151, 113, 138, 241, 181, 4, 156, 254, 177, 68, 109, 122, 190, 223, 200, 65, 217, 44, 230, 77, 105, 65, 208, 37, 72, 181, 73, 92, 69, 25, 110, 6, 74, 107, 143, 250, 159, 196, 186, 8, 43, 40, 255, 115, 92, 14, 25, 25, 83, 129, 86, 243, 162, 12, 23, 20, 119, 14, 39, 246, 75, 70, 135, 24, 207, 252, 138, 192, 139, 127, 204, 153, 41, 130, 106, 255, 103, 179, 232, 103, 98, 225, 114, 163, 194, 42, 118, 7, 220, 12, 45, 188, 108, 3, 88, 183, 15, 171, 50, 48, 219, 165, 146, 92, 152, 15, 245, 185, 90, 192, 144, 229, 237, 28, 67, 173, 103, 18, 35, 111, 104, 24, 121, 157, 53, 227, 148, 142, 250, 45, 167, 81, 252, 242, 107, 136, 220, 18, 51, 33, 43, 59, 201, 237, 85, 28, 71, 97, 195, 231, 42, 216, 56, 174, 36, 188, 186, 161, 72, 216, 73, 1, 157, 219, 181, 24, 201, 74, 41, 178, 170, 245, 48, 91, 192, 236, 109, 111, 161, 250, 233, 19, 104, 220, 60, 132, 218, 173, 199, 81, 254, 220, 187, 240, 182, 141, 176, 42, 187, 136, 32, 93, 228, 102, 187, 161, 182, 174, 74, 221, 208, 111, 52, 26, 107, 217, 10, 45, 135, 117, 43, 108, 178, 170, 234, 217, 6, 185, 103, 239, 29, 101, 97, 212, 138, 97, 106, 14, 158, 123, 17, 141, 246, 49, 84, 6, 143, 162, 246, 169, 33, 212, 175, 58, 197, 18, 108, 28, 13, 119, 26, 190, 81, 230, 230, 213, 167, 15, 147, 178, 82, 56, 100, 93, 250, 255, 73, 88, 165, 81, 135, 25, 234, 254, 7, 238, 137, 61, 175, 50, 170, 204, 29, 218, 101, 42, 201, 20, 156, 157, 130, 151, 189, 200, 9, 144, 104, 114, 150, 110, 94, 133, 208, 232, 191, 36, 171, 26, 87, 109, 16, 5, 1, 55, 246, 27, 199, 250, 92, 98, 1, 170, 88, 217, 212, 13, 217, 168, 85, 206, 9, 17, 146, 84, 136, 144, 59, 234, 192, 168, 32, 52, 171, 36, 170, 118, 34, 116, 3, 45, 98, 239, 249, 175, 25, 77, 85, 73, 216, 178, 185, 233, 251, 95, 96, 93, 10, 43, 52, 3, 190, 82, 154, 79, 122, 158, 55, 169, 254, 175, 209, 140, 0, 170, 113, 97, 177, 118, 67, 212, 60, 170, 15, 83, 243, 9, 99, 17, 177, 16, 65, 58, 157, 94, 216, 31, 111, 12, 235, 38, 172, 160, 72, 171, 22, 69, 209, 172, 136, 231, 255, 201, 34, 152, 85, 212, 49, 102, 232, 90, 60, 111, 94, 231, 143, 18, 88, 241, 14, 35, 17, 228, 114, 57, 37, 251, 134, 177, 33, 194, 139, 240, 253, 176, 16, 171, 189, 185, 130, 34, 167, 252, 148, 80, 223, 226, 22, 9, 55, 201, 46, 40, 173, 155, 137, 218, 193, 131, 7, 27, 205, 78, 27, 196, 37, 194, 107, 77, 207, 87, 162, 163, 103, 243, 132, 78, 135, 150, 170, 230, 92, 0, 149, 15, 116, 77, 43, 243, 56, 69, 35, 156, 229, 241, 24, 233, 254, 140, 81, 226, 229, 76, 174, 245, 159, 23, 186, 109, 24, 202, 35, 47, 97, 165, 111, 197, 75, 225, 177, 167, 158, 110, 187, 48, 57, 121, 31, 159, 43, 155, 186, 81, 52, 45, 163, 108, 25, 86, 217, 78, 36, 106, 150, 105, 212, 50, 153, 84, 227, 218, 129, 1, 255, 43, 123, 239, 186, 226, 99, 213, 138, 248, 184, 104, 151, 254, 158, 23, 20, 248, 31, 57, 211, 50, 143, 235, 44, 247, 222, 0, 0, 0, 0, 73, 69, 78, 68, 174, 66, 96, 130 };
@@ -204,93 +233,44 @@ namespace Obeliskial_Content
                 medsSprites["medsDefaultCard"] = Sprite.Create(spriteTexture, new Rect(0, 0, spriteTexture.width, spriteTexture.height), new Vector2(0.5f, 0.5f), 100f, 0, SpriteMeshType.FullRect);
                 LogInfo("Default sprites loaded!");
             }
-            catch (Exception e) { LogError("Error while creating folders and loading default sprites: " + e.Message); }
+            catch (Exception e) { LogError("Error while creating default sprites: " + e.Message); }
 
-            int vanillaCount = 0;
-            int customCount = 0;
+            // vanilla AudioClips, noting that there are two walk_stone entries and this will just use the latter
+            LogInfo("Loading vanilla AudioClips...");
             try
             {
-                // collect vanilla AudioClips, noting that there are two walk_stone entries and this will just use the latter
-                LogInfo("Loading AudioClips...");
                 AudioClip[] foundAudioClips = Resources.FindObjectsOfTypeAll<AudioClip>();
                 foreach (AudioClip ac in foundAudioClips)
                 {
-                    if (medsVanillaContentLog.Value) { LogDebug("Loading vanilla AudioClip: " + ac.name); };
+                    if (medsVanillaContentLog.Value) { LogInfo("Loading vanilla AudioClip: " + ac.name); };
                     medsAudioClips[ac.name] = ac;
                 }
-                vanillaCount = medsAudioClips.Count;
-                customCount = 0;
-
-                // custom audioClips
-                medsFI = (new DirectoryInfo(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", "audio"))).GetFiles("*.wav");
-                foreach (FileInfo f in medsFI)
-                {
-                    string path = "file:///" + f.ToString().Replace("\\", "/");
-                    try
-                    {
-                        using (UnityWebRequest www = UnityWebRequestMultimedia.GetAudioClip(path, AudioType.WAV))
-                        {
-                            www.SendWebRequest();
-                            while (!www.isDone) { }
-                            if (www.result == UnityWebRequest.Result.ConnectionError)
-                            {
-                                LogDebug(www.error);
-                            }
-                            else
-                            {
-                                AudioClip ac = DownloadHandlerAudioClip.GetContent(www);
-                                ac.name = Path.GetFileNameWithoutExtension(f.Name);
-                                medsAudioClips[Path.GetFileNameWithoutExtension(f.Name)] = ac;
-                                customCount++;
-                            }
-                        }
-                    }
-                    catch (Exception ex) { LogError("Error loading custom AudioClip " + f.Name + ": " + ex.Message); }
-                }
-                LogInfo(medsAudioClips.Count + " AudioClips loaded (" + vanillaCount + " vanilla / " + customCount + " custom)");
+                LogInfo(medsAudioClips.Count + " vanilla AudioClips loaded");
             }
             catch (Exception e) { LogError("Error loading AudioClips: " + e.Message); }
 
+            // vanilla sprites
+            LogInfo("Loading vanilla Sprites...");
             try
             {
-                // collect vanilla sprites...
-                LogInfo("Loading Sprites...");
                 Sprite[] foundSprites = Resources.FindObjectsOfTypeAll<UnityEngine.Sprite>();
                 foreach (Sprite spr in foundSprites)
                 {
-                    if (medsVanillaContentLog.Value) { LogDebug("Loading vanilla Sprite: " + spr.name); };
+                    if (medsVanillaContentLog.Value) { LogInfo("Loading vanilla Sprite: " + spr.name); };
                     medsSprites[spr.name.Trim().ToLower()] = spr;
                 }
-                vanillaCount = medsSprites.Count;
-                customCount = 0;
-
-                // collect custom sprites
-                medsFI = (new DirectoryInfo(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", "sprite"))).GetFiles("*.png");
-                foreach (FileInfo f in medsFI)
-                {
-                    LogDebug("Loading custom Sprite: " + f.Name);
-                    try
-                    {
-                        spriteTexture = new Texture2D(0, 0);
-                        spriteTexture.LoadImage(File.ReadAllBytes(f.ToString()));
-                        Sprite medsSprite = Sprite.Create(spriteTexture, new Rect(0, 0, spriteTexture.width, spriteTexture.height), new Vector2(0.5f, 0.5f), 100f, 0, SpriteMeshType.FullRect);
-                        medsSprite.name = Path.GetFileNameWithoutExtension(f.Name).Trim().ToLower();
-                        medsSprites[Path.GetFileNameWithoutExtension(f.Name).Trim().ToLower()] = medsSprite;
-                        customCount++;
-                    }
-                    catch (Exception ex) { LogError("Error loading custom Sprite " + f.Name + ": " + ex.Message); }
-                }
-                LogInfo(medsSprites.Count + " Sprites loaded (" + vanillaCount + " vanilla / " + customCount + " custom)");
+                LogInfo(medsSprites.Count + " vanilla Sprites loaded");
             }
             catch (Exception e) { LogError("Error loading Sprites: " + e.Message); }
 
+            // vanilla gameobjects
+            LogInfo("Loading vanilla gameObjects...");
             try
             {
-                // collect vanilla gameobjects
                 GameObject[] foundGOs = Resources.FindObjectsOfTypeAll<GameObject>();
                 foreach (GameObject gObj in foundGOs)
                 {
-                    if (medsVanillaContentLog.Value) { LogDebug("Loading vanilla gameObject: " + gObj.name); };
+                    if (medsVanillaContentLog.Value) { LogInfo("Loading vanilla gameObject: " + gObj.name); };
                     if (medsGOs.ContainsKey(gObj.name))
                     {
                         int c1 = medsGOs[gObj.name].GetComponents(typeof(Component)).Count();
@@ -300,119 +280,26 @@ namespace Obeliskial_Content
                     }
                     medsGOs[gObj.name] = gObj;
                 }
-                vanillaCount = medsGOs.Count;
-                customCount = 0;
-                // #TODO: collect custom gameobjects
-                medsFI = (new DirectoryInfo(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", "gameObject"))).GetFiles("*.json");
-                foreach (FileInfo f in medsFI)
-                {
-                    try
-                    {
-                        LogDebug("Loading custom gameObject retexture: " + f.Name);
-                        GameObjectRetexture medsGOR = JsonUtility.FromJson<GameObjectRetexture>(File.ReadAllText(f.ToString()));
-                        GameObject newGO = GetGO(medsGOR.BaseGameObjectID);
-                        newGO.name = medsGOR.NewGameObjectID;
-                        Sprite newTexture = medsGOR.SpriteToUse.IsNullOrWhiteSpace() ? (Sprite)null : GetSprite(medsGOR.SpriteToUse);
-                        if (newGO != null)
-                        {
-                            newGO.transform.localScale = new Vector3(newGO.transform.localScale.x * medsGOR.ScaleX * (medsGOR.Flip ? -1 : 1), newGO.transform.localScale.y * medsGOR.ScaleY, newGO.transform.localScale.z);
-                            if (newTexture != null)
-                            {
-                                try
-                                {
-                                    SpriteRenderer[] GOSRs = newGO.GetComponentsInChildren<SpriteRenderer>(true);
-                                    foreach (SpriteRenderer SR in GOSRs)
-                                    {
-                                        if (SR.sprite != (Sprite)null && SR.gameObject.GetComponent<UnityEngine.U2D.Animation.SpriteSkin>() != null)// && SR.sprite.texture != (Texture2D)null)
-                                        {
-
-                                            LogDebug("trying to change sprite for spriterenderer: " + SR.name);
-                                            // attempt 3: make new sprites, set bones, set bind poses
-                                            Sprite actualNewSprite = Sprite.Create(newTexture.texture, new Rect(SR.sprite.rect.x, SR.sprite.rect.y, SR.sprite.rect.width, SR.sprite.rect.height), new Vector2(SR.sprite.pivot.x / SR.sprite.rect.width, SR.sprite.pivot.y / SR.sprite.rect.height));
-                                            int vertexCount = SR.sprite.GetVertexCount();
-
-                                            NativeArray<Vector2> uvArr = new(vertexCount, Allocator.Temp);
-                                            NativeArray<Vector3> vertexArr = new(vertexCount, Allocator.Temp);
-                                            NativeArray<Vector4> tangentArr = new(vertexCount, Allocator.Temp);
-                                            NativeArray<BoneWeight> blendWeightArr = new(vertexCount, Allocator.Temp);
-
-                                            NativeSlice<Vector2> uvRef = SR.sprite.GetVertexAttribute<Vector2>(VertexAttribute.TexCoord0);
-                                            NativeSlice<Vector3> vertexRef = SR.sprite.GetVertexAttribute<Vector3>(VertexAttribute.Position);
-                                            NativeSlice<Vector4> tangentRef = SR.sprite.GetVertexAttribute<Vector4>(VertexAttribute.Tangent);
-                                            NativeSlice<BoneWeight> blendWeightRef = SR.sprite.GetVertexAttribute<BoneWeight>(VertexAttribute.BlendWeight);
-
-                                            for (var i = 0; i < vertexCount; ++i)
-                                            {
-                                                uvArr[i] = uvRef[i];
-                                                vertexArr[i] = vertexRef[i];
-                                                tangentArr[i] = tangentRef[i];
-                                                blendWeightArr[i] = blendWeightRef[i];
-                                            }
-                                            actualNewSprite.SetIndices(SR.sprite.GetIndices());
-                                            actualNewSprite.SetVertexCount(SR.sprite.GetVertexCount());
-                                            actualNewSprite.SetVertexAttribute(VertexAttribute.TexCoord0, uvArr);
-                                            actualNewSprite.SetVertexAttribute(VertexAttribute.Position, vertexArr);
-                                            actualNewSprite.SetVertexAttribute(VertexAttribute.Tangent, tangentArr);
-                                            actualNewSprite.SetVertexAttribute(VertexAttribute.BlendWeight, blendWeightArr);
-                                            uvArr.Dispose();
-                                            vertexArr.Dispose();
-                                            tangentArr.Dispose();
-                                            blendWeightArr.Dispose();
-                                            actualNewSprite.SetBones(SR.sprite.GetBones());
-                                            actualNewSprite.SetBindPoses(SR.sprite.GetBindPoses());
-                                            SR.sprite = actualNewSprite;
-                                        }
-                                    }
-                                }
-                                catch
-                                {
-                                    LogError("Unable to retexture gameObject " + medsGOR.NewGameObjectID + " for unknown reason! Please let Meds know.");
-                                }
-                            }
-                            else if (!medsGOR.SpriteToUse.IsNullOrWhiteSpace())
-                            {
-                                LogError("Could not find gameObject retexture sprite: " + medsGOR.SpriteToUse);
-                            }
-                            medsGOs[medsGOR.NewGameObjectID] = newGO;
-                            customCount++;
-                        }
-                        else
-                        {
-                            LogError("Could not find base gameObject with ID: " + medsGOR.BaseGameObjectID);
-                        }
-                    }
-                    catch (Exception ex) { LogError("Error loading custom GameObject " + f.Name + ": " + ex.Message); }
-                }
-                LogInfo(medsGOs.Count + " GameObjects loaded (" + vanillaCount + " vanilla / " + customCount + " custom)");
+                LogInfo(medsGOs.Count + " vanilla GameObjects loaded");
             }
             catch (Exception e) { LogError("Error loading GameObjects: " + e.Message); }
 
+            // vanilla thermometer tier data
+            LogInfo("Loading vanilla thermometerTierData...");
             try
             {
-                // collect vanilla thermometer tier data
-                LogInfo("Loading thermometerTierData...");
                 ThermometerTierData[] thermoTD = Resources.FindObjectsOfTypeAll<ThermometerTierData>();
                 foreach (ThermometerTierData td in thermoTD)
                 {
-                    if (medsVanillaContentLog.Value) { LogDebug("Loading vanilla thermometerTierData: " + td.name); };
+                    if (medsVanillaContentLog.Value) { LogInfo("Loading vanilla thermometerTierData: " + td.name); };
                     medsThermometerTierData[td.name] = td;
                 }
                 LogInfo("Loaded " + medsThermometerTierData.Count + " vanilla thermometerTierData");
             }
             catch (Exception e) { LogError("Error loading vanilla thermometerTierData: " + e.Message); }
 
-            /*
-             *    88      a8P   88888888888  8b        d8  888b      88    ,ad8888ba,  888888888888  88888888888  ad88888ba   
-             *    88    ,88'    88            Y8,    ,8P   8888b     88   d8"'    `"8b      88       88          d8"     "8b  
-             *    88  ,88"      88             Y8,  ,8P    88 `8b    88  d8'        `8b     88       88          Y8,          
-             *    88,d88'       88aaaaa         "8aa8"     88  `8b   88  88          88     88       88aaaaa     `Y8aaaaa,    
-             *    8888"88,      88"""""          `88'      88   `8b  88  88          88     88       88"""""       `"""""8b,  
-             *    88P   Y8b     88                88       88    `8b 88  Y8,        ,8P     88       88                  `8b  
-             *    88     "88,   88                88       88     `8888   Y8a.    .a8P      88       88          Y8a     a8P  
-             *    88       Y8b  88888888888       88       88      `888    `"Y8888Y"'       88       88888888888  "Y88888P"                                                                                                                  
-             */
-            LogInfo("Loading keynotes...");
             // vanilla keynotes
+            LogInfo("Loading vanilla keynotes...");
             for (int index = 0; index < keyNotesDataArray.Length; ++index)
             {
                 try
@@ -431,32 +318,10 @@ namespace Obeliskial_Content
                 }
                 catch (Exception e) { LogError("Error loading vanilla keynotes: " + e.Message); }
             }
-            // custom keynotes
-            medsFI = (new DirectoryInfo(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", "keyNote"))).GetFiles("*.json");
-            foreach (FileInfo f in medsFI)
-            {
-                try
-                {
-                    LogDebug("Loading custom keynote: " + f.Name);
-                    KeyNotesData medsKeyNote = ToData(JsonUtility.FromJson<KeyNotesDataText>(File.ReadAllText(f.ToString())));
-                    medsKeyNotesDataSource[medsKeyNote.Id] = UnityEngine.Object.Instantiate<KeyNotesData>(medsKeyNote);
-                }
-                catch (Exception e) { LogError("Error loading custom keynote: " + e.Message); }
-            }
-            // save vanilla+custom
+            LogInfo(medsKeyNotesDataSource.Count + " vanilla keynotes loaded");
             Globals.Instance.KeyNotes = medsKeyNotesDataSource;
-            LogInfo("Keynotes loaded!");
 
-            /*
-             *           db        88        88  88888888ba          db         ad88888ba         ,adba,          ,ad8888ba,   88        88  88888888ba    ad88888ba   88888888888  ad88888ba   
-             *          d88b       88        88  88      "8b        d88b       d8"     "8b        8I  I8         d8"'    `"8b  88        88  88      "8b  d8"     "8b  88          d8"     "8b  
-             *         d8'`8b      88        88  88      ,8P       d8'`8b      Y8,                "8bdP'        d8'            88        88  88      ,8P  Y8,          88          Y8,          
-             *        d8'  `8b     88        88  88aaaaaa8P'      d8'  `8b     `Y8aaaaa,         ,d8"8b  88     88             88        88  88aaaaaa8P'  `Y8aaaaa,    88aaaaa     `Y8aaaaa,    
-             *       d8YaaaaY8b    88        88  88""""88'       d8YaaaaY8b      `"""""8b,     .dP'   Yb,8I     88             88        88  88""""88'      `"""""8b,  88"""""       `"""""8b,  
-             *      d8""""""""8b   88        88  88    `8b      d8""""""""8b           `8b     8P      888'     Y8,            88        88  88    `8b            `8b  88                  `8b  
-             *     d8'        `8b  Y8a.    .a8P  88     `8b    d8'        `8b  Y8a     a8P     8b,   ,dP8b       Y8a.    .a8P  Y8a.    .a8P  88     `8b   Y8a     a8P  88          Y8a     a8P  
-             *    d8'          `8b  `"Y8888Y"'   88      `8b  d8'          `8b  "Y88888P"      `Y8888P"  Yb       `"Y8888Y"'    `"Y8888Y"'   88      `8b   "Y88888P"   88888888888  "Y88888P"   
-             */
+
             LogInfo("Loading auras & curses...");
             // vanilla auras & curses; this is basically CreateAuraCurses, but occurring earlier?
             List<string> medsACIndex = new();
@@ -492,38 +357,11 @@ namespace Obeliskial_Content
                 }
                 catch (Exception e) { LogError("Error loading vanilla auraCurse: " + e.Message); }
             }
-            // custom auras & curses
-            Dictionary<string, AuraCurseData> medsImportAuraCurse = new();
-            medsFI = (new DirectoryInfo(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", "auraCurse"))).GetFiles("*.json");
-            foreach (FileInfo f in medsFI)
-            {
-                try
-                {
-                    LogDebug("Loading custom auraCurse: " + f.Name);
-                    AuraCurseData medsACSingle = ToData(JsonUtility.FromJson<AuraCurseDataText>(File.ReadAllText(f.ToString())));
-                    medsACSingle.Init();
-                    medsAurasCursesSource[medsACSingle.Id] = UnityEngine.Object.Instantiate<AuraCurseData>(medsACSingle);
-                    if (!medsACIndex.Contains(medsACSingle.Id.ToLower()))
-                        medsACIndex.Add(medsACSingle.Id.ToLower());
-                }
-                catch (Exception e) { LogError("Error loading custom auraCurse: " + e.Message); }
-            }
-            // save vanilla+custom
             Traverse.Create(Globals.Instance).Field("_AurasCursesSource").SetValue(medsAurasCursesSource);
             Traverse.Create(Globals.Instance).Field("_AurasCursesIndex").SetValue(medsACIndex);
             Traverse.Create(Globals.Instance).Field("_AurasCurses").SetValue(medsAurasCursesSource);
-            LogInfo("Auras & curses loaded!");
 
-            /*
-             *      ,ad8888ba,         db         88888888ba   88888888ba,     ad88888ba   
-             *     d8"'    `"8b       d88b        88      "8b  88      `"8b   d8"     "8b  
-             *    d8'                d8'`8b       88      ,8P  88        `8b  Y8,          
-             *    88                d8'  `8b      88aaaaaa8P'  88         88  `Y8aaaaa,    
-             *    88               d8YaaaaY8b     88""""88'    88         88    `"""""8b,  
-             *    Y8,             d8""""""""8b    88    `8b    88         8P          `8b  
-             *     Y8a.    .a8P  d8'        `8b   88     `8b   88      .a8P   Y8a     a8P  
-             *      `"Y8888Y"'  d8'          `8b  88      `8b  88888888Y"'     "Y88888P"   
-             */
+
             LogInfo("Loading cards...");
             // vanilla cards
             for (int index = 0; index < cardDataArray.Length; ++index)
@@ -536,71 +374,9 @@ namespace Obeliskial_Content
                 }
                 catch (Exception e) { LogError("Error loading vanilla card: " + e.Message); }
             }
-            // custom cards
-            medsFI = (new DirectoryInfo(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", "card"))).GetFiles("*.json");
-            medsSecondRunImport = new();
-            medsSecondRunImport2 = new();
-            Dictionary<string, CardData> medsCardsCustom = new();
-            foreach (FileInfo f in medsFI)
-            {
-                try
-                {
-                    LogDebug("Loading custom card: " + f.Name);
-                    CardData medsCard = ToData(JsonUtility.FromJson<CardDataText>(File.ReadAllText(f.ToString())));
-                    // #TODO: UNLOCKS?
-                    if (!medsCustomUnlocks.Contains(medsCard.Id))
-                        medsCustomUnlocks.Add(medsCard.Id);
-                    medsCardsSource[medsCard.Id] = UnityEngine.Object.Instantiate<CardData>(medsCard);
-                }
-                catch (Exception err)
-                {
-                    LogInfo("ERROR LOADING CUSTOM CARD " + f.Name + ": " + err.Message);
-                }
-            }
-            SortedDictionary<string, CardData> medsCardsTemp = new SortedDictionary<string, CardData>(medsCardsSource);
-            medsCardsSource = new Dictionary<string, CardData>(medsCardsTemp);
-            // do a second run to link AddCardList
-            LogInfo("Loading custom card component: AddCardList...");
-            foreach (string key in medsSecondRunImport.Keys)
-            {
-                try
-                {
-                    medsCardsSource[key].AddCardList = new CardData[medsSecondRunImport[key].Length];
-                    for (int a = 0; a < medsSecondRunImport[key].Length; a++)
-                    {
-                        if (medsCardsSource.ContainsKey(medsSecondRunImport[key][a]))
-                            medsCardsSource[key].AddCardList[a] = medsCardsSource[medsSecondRunImport[key][a]];
-                        else
-                            medsCardsSource[key].AddCardList[a] = (CardData)null;
-                    }
-                }
-                catch (Exception e) { LogError("Error loading AddCardList: " + e.Message); }
-            }
-            // do a second run to link UpgradesToRare
-            LogInfo("Loading custom card component: UpgradesToRare...");
-            foreach (string key in medsSecondRunImport2.Keys)
-            {
-                try
-                {
-                    if (medsCardsSource.ContainsKey(medsSecondRunImport2[key]))
-                        medsCardsSource[key].UpgradesToRare = medsCardsSource[medsSecondRunImport2[key]];
-                }
-                catch (Exception e) { LogError("Error loading UpgradesToRare: " + e.Message); }
-            }
-            // save vanilla+custom
             Traverse.Create(Globals.Instance).Field("_CardsSource").SetValue(medsCardsSource);
-            LogInfo("Cards loaded!");
 
-            /*
-             *    888888888888  88  88888888888  88888888ba         88888888ba   88888888888  I8,        8        ,8I    db         88888888ba   88888888ba,     ad88888ba   
-             *         88       88  88           88      "8b        88      "8b  88           `8b       d8b       d8'   d88b        88      "8b  88      `"8b   d8"     "8b  
-             *         88       88  88           88      ,8P        88      ,8P  88            "8,     ,8"8,     ,8"   d8'`8b       88      ,8P  88        `8b  Y8,          
-             *         88       88  88aaaaa      88aaaaaa8P'        88aaaaaa8P'  88aaaaa        Y8     8P Y8     8P   d8'  `8b      88aaaaaa8P'  88         88  Y8aaaaa,    
-             *         88       88  88"""""      88""""88'          88""""88'    88"""""        `8b   d8' `8b   d8'  d8YaaaaY8b     88""""88'    88         88   `"""""8b,  
-             *         88       88  88           88    `8b          88    `8b    88              `8a a8'   `8a a8'  d8""""""""8b    88    `8b    88         8P          `8b  
-             *         88       88  88           88     `8b         88     `8b   88               `8a8'     `8a8'  d8'        `8b   88     `8b   88      .a8P   Y8a     a8P  
-             *         88       88  88888888888  88      `8b        88      `8b  88888888888       `8'       `8'  d8'          `8b  88      `8b  88888888Y"'     "Y88888P"   
-             */
+
             LogInfo("Loading tier reward data...");
             // vanilla 
             for (int index = 0; index < tierRewardDataArray.Length; ++index)
@@ -612,32 +388,10 @@ namespace Obeliskial_Content
                 }
                 catch (Exception e) { LogError("Error loading vanilla tier reward data: " + e.Message); }
             }
-            // custom
-            medsFI = (new DirectoryInfo(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", "tierReward"))).GetFiles("*.json");
-            foreach (FileInfo f in medsFI)
-            {
-                try
-                {
-                    LogDebug("Loading custom tierReward: " + f.Name);
-                    TierRewardData medsTRD = ToData(JsonUtility.FromJson<TierRewardDataText>(File.ReadAllText(f.ToString())));
-                    medsTierRewardDataSource[medsTRD.TierNum] = UnityEngine.Object.Instantiate<TierRewardData>(medsTRD);
-                }
-                catch (Exception e) { LogError("Error loading custom tierReward: " + e.Message); }
-            }
-            // save vanilla+custom tierrewarddata
             Traverse.Create(Globals.Instance).Field("_TierRewardDataSource").SetValue(medsTierRewardDataSource);
             LogInfo("Tier reward data loaded!");
 
-            /*
-             *    888b      88  88888888ba     ,ad8888ba,              
-             *    8888b     88  88      "8b   d8"'    `"8b             
-             *    88 `8b    88  88      ,8P  d8'                       
-             *    88  `8b   88  88aaaaaa8P'  88             ,adPPYba,  
-             *    88   `8b  88  88""""""'    88             I8[    ""  
-             *    88    `8b 88  88           Y8,             `"Y8ba,   
-             *    88     `8888  88            Y8a.    .a8P  aa    ]8I  
-             *    88      `888  88             `"Y8888Y"'   `"YbbdP"'  
-             */
+
             LogInfo("Loading NPCs...");
             medsSecondRunImport = new();
             // vanilla 
@@ -650,20 +404,7 @@ namespace Obeliskial_Content
                 }
                 catch (Exception e) { LogError("Error loading vanilla NPC: " + e.Message); }
             }
-            // custom
-            medsFI = (new DirectoryInfo(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", "NPC"))).GetFiles("*.json");
-            foreach (FileInfo f in medsFI)
-            {
-                try
-                {
-                    LogDebug("Loading custom NPC: " + f.Name);
-                    NPCData medsNPC = ToData(JsonUtility.FromJson<NPCDataText>(File.ReadAllText(f.ToString())));
-                    medsNPCsSource[medsNPC.Id] = UnityEngine.Object.Instantiate<NPCData>(medsNPC);
-                }
-                catch (Exception e) { LogError("Error loading custom NPC: " + e.Message); }
-            }
-            // save vanilla+custom
-            LogInfo("Creating NPC clones...");
+            LogInfo("Creating vanilla NPC clones...");
             Dictionary<string, NPCData> medsNPCs = new();
             Dictionary<string, NPCData> medsNPCsNamed = new();
             SortedDictionary<string, string> sortedDictionary = new SortedDictionary<string, string>();
@@ -700,30 +441,8 @@ namespace Obeliskial_Content
             Traverse.Create(Globals.Instance).Field("_NPCsNamed").SetValue(medsNPCsNamed);
             LogInfo("NPCs loaded!");
 
-            // do a final (?) run to link NPCs to the SummonUnit property of cards...
-            LogInfo("Loading custom card component: SummonUnit...");
-            foreach (string key in medsCardsNeedingSummonUnits.Keys)
-            {
-                try
-                {
-                    medsCardsSource[key].SummonUnit = Globals.Instance.GetNPC(medsCardsNeedingSummonUnits[key]);
-                }
-                catch (Exception e) { LogError("Error loading SummonUnit: " + e.Message); }
-            }
-            Traverse.Create(Globals.Instance).Field("_CardsSource").SetValue(medsCardsSource);
 
-            /*
-             *    88  888888888888  88888888888  88b           d88   ad88888ba   
-             *    88       88       88           888b         d888  d8"     "8b  
-             *    88       88       88           88`8b       d8'88  Y8,          
-             *    88       88       88aaaaa      88 `8b     d8' 88  `Y8aaaaa,    
-             *    88       88       88"""""      88  `8b   d8'  88    `"""""8b,  
-             *    88       88       88           88   `8b d8'   88          `8b  
-             *    88       88       88           88    `888'    88  Y8a     a8P  
-             *    88       88       88888888888  88     `8'     88   "Y88888P"   
-             *                                                                   
-             *                                                                   
-             */
+
             LogInfo("Loading item data...");
             // vanilla 
             for (int index = 0; index < itemDataArray.Length; ++index)
@@ -736,76 +455,9 @@ namespace Obeliskial_Content
                 }
                 catch (Exception e) { LogError("Error loading vanilla item data: " + e.Message); }
             }
-
-            // second run through cards to connect items...
-            LogInfo("Loading custom card component: Item...");
-            foreach (string key in medsCardsNeedingItems.Keys)
-            {
-                ItemData newItem = (ItemData)null;
-                try
-                {
-                    newItem = ToData(JsonUtility.FromJson<ItemDataText>(medsCardsNeedingItems[key]));
-                    LogDebug("Loading custom item: " + newItem.Id);
-                    medsItemDataSource[newItem.Id] = UnityEngine.Object.Instantiate<ItemData>(newItem);
-                    medsCardsSource[key].Item = medsItemDataSource[newItem.Id];
-                }
-                catch (Exception e) { LogError("ERROR LOADING CUSTOM ITEM FROM CARD: " + key + " (" + e.Message + ")"); }
-            }
-            LogInfo("Loading custom card component: ItemEnchantment...");
-            foreach (string key in medsCardsNeedingItemEnchants.Keys)
-            {
-                ItemData newItem = (ItemData)null;
-                try
-                {
-                    newItem = ToData(JsonUtility.FromJson<ItemDataText>(medsCardsNeedingItemEnchants[key]));
-                    LogDebug("Loading custom enchantment: " + newItem.Id);
-                    medsItemDataSource[newItem.Id] = UnityEngine.Object.Instantiate<ItemData>(newItem);
-                    medsCardsSource[key].ItemEnchantment = medsItemDataSource[newItem.Id];
-                }
-                catch
-                {
-                    LogError("ERROR LOADING CUSTOM ENCHANTMENT FROM CARD: " + key);
-                }
-            }
             Traverse.Create(Globals.Instance).Field("_ItemDataSource").SetValue(medsItemDataSource);
-            LogInfo("Item data loaded!");
-
-            // ExtendedEnchantments
-            foreach (string cID in medsCardsSource.Keys)
-            {
-                try
-                {
-                    CardData _card = medsCardsSource[cID];
-                    if ((UnityEngine.Object)_card.Item != (UnityEngine.Object)null || (UnityEngine.Object)_card.ItemEnchantment != (UnityEngine.Object)null)
-                    {
-                        if ((UnityEngine.Object)_card.SummonUnit != (UnityEngine.Object)null || _card.SelfKillHiddenSeconds > 0.0f)
-                        {
-                            medsExtendedEnchantments[cID] = UnityEngine.Object.Instantiate<CardData>(_card);
-                            _card.SummonUnit = (NPCData)null;
-                            _card.SummonUnitNum = 0;
-                            _card.SelfKillHiddenSeconds = 0.0f;
-                        }
-                    }
-                }
-                catch (Exception e) { LogError("Error loading ExtendedEnchantments: " + e.Message); }
-            }
 
 
-
-            Traverse.Create(Globals.Instance).Field("_CardsSource").SetValue(medsCardsSource);
-            LogInfo("Loading card clones...");
-            medsCreateCardClones();
-
-            /*
-             *    888888888888  88888888ba          db         88  888888888888  ad88888ba   
-             *         88       88      "8b        d88b        88       88      d8"     "8b  
-             *         88       88      ,8P       d8'`8b       88       88      Y8,          
-             *         88       88aaaaaa8P'      d8'  `8b      88       88      `Y8aaaaa,    
-             *         88       88""""88'       d8YaaaaY8b     88       88        `"""""8b,  
-             *         88       88    `8b      d8""""""""8b    88       88              `8b  
-             *         88       88     `8b    d8'        `8b   88       88      Y8a     a8P  
-             *         88       88      `8b  d8'          `8b  88       88       "Y88888P"   
-             */
             LogInfo("Loading traits...");
             Dictionary<string, TraitData> medsTraitsCopy = new();
             // vanilla traits
@@ -821,38 +473,10 @@ namespace Obeliskial_Content
                 }
                 catch (Exception e) { LogError("Error loading vanilla trait: " + e.Message); }
             }
-            // custom traits
-            medsFI = (new DirectoryInfo(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", "trait"))).GetFiles("*.json");
-            foreach (FileInfo f in medsFI)
-            {
-                try
-                {
-                    LogDebug("Loading custom trait: " + f.Name);
-                    TraitData medsTrait = ToData(JsonUtility.FromJson<TraitDataText>(File.ReadAllText(f.ToString())));
-                    medsTraitsSource[medsTrait.Id] = UnityEngine.Object.Instantiate<TraitData>(medsTrait);
-                    medsTraitsCopy[medsTrait.Id] = UnityEngine.Object.Instantiate<TraitData>(medsTraitsSource[medsTrait.Id]);
-                    if (!(medsCustomTraitsSource.Contains(medsTrait.Id)))
-                        medsCustomTraitsSource.Add(medsTrait.Id);
-                }
-                catch (Exception e) { LogError("Error loading custom trait: " + e.Message); }
-            }
-            // save vanilla+custom
             Traverse.Create(Globals.Instance).Field("_TraitsSource").SetValue(medsTraitsSource);
             Traverse.Create(Globals.Instance).Field("_Traits").SetValue(medsTraitsCopy);
-            LogInfo("Traits loaded!");
 
-            /*
-             *    88        88  88888888888  88888888ba     ,ad8888ba,    88888888888  ad88888ba   
-             *    88        88  88           88      "8b   d8"'    `"8b   88          d8"     "8b  
-             *    88        88  88           88      ,8P  d8'        `8b  88          Y8,          
-             *    88aaaaaaaa88  88aaaaa      88aaaaaa8P'  88          88  88aaaaa     `Y8aaaaa,    
-             *    88""""""""88  88"""""     a 88""""88'    88          88  88"""""       `"""""8b,  
-             *    88        88  88           88    `8b    Y8,        ,8P  88                  `8b  
-             *    88        88  88           88     `8b    Y8a.    .a8P   88          Y8a     a8P  
-             *    88        88  88888888888  88      `8b    `"Y8888Y"'    88888888888  "Y88888P"   
-             * 
-             *    I think these are actually classes? (not subclasses)
-             */
+
             LogDebug("Loading vanilla heroes...");
             Dictionary<string, HeroData> medsHeroes = new();
             for (int index = 0; index < heroDataArray.Length; ++index)
@@ -866,17 +490,7 @@ namespace Obeliskial_Content
             Traverse.Create(Globals.Instance).Field("_Heroes").SetValue(medsHeroes);
             LogInfo("Heroes loaded!");
 
-            /*
-             *    88888888ba   88888888888  88888888ba   88      a8P   ad88888ba   
-             *    88      "8b  88           88      "8b  88    ,88'   d8"     "8b  
-             *    88      ,8P  88           88      ,8P  88  ,88"     Y8,          
-             *    88aaaaaa8P'  88aaaaa      88aaaaaa8P'  88,d88'      `Y8aaaaa,    
-             *    88""""""'    88"""""      88""""88'    8888"88,       `"""""8b,  
-             *    88           88           88    `8b    88P   Y8b            `8b  
-             *    88           88           88     `8b   88     "88,  Y8a     a8P  
-             *    88           88888888888  88      `8b  88       Y8b  "Y88888P"   
-             */
-            LogInfo("Loading perks...");
+
             // vanilla perks
             for (int index = 0; index < perkDataArray.Length; ++index)
             {
@@ -888,35 +502,10 @@ namespace Obeliskial_Content
                 }
                 catch (Exception e) { LogError("Error loading vanilla perk: " + e.Message); }
             }
-            // custom perks
-            medsFI = (new DirectoryInfo(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", "perk"))).GetFiles("*.json");
-            foreach (FileInfo f in medsFI)
-            {
-                try
-                {
-                    LogDebug("Loading custom perk: " + f.Name);
-                    PerkData medsPerk = ToData(JsonUtility.FromJson<PerkDataText>(File.ReadAllText(f.ToString())));
-                    medsPerksSource[medsPerk.Id] = UnityEngine.Object.Instantiate<PerkData>(medsPerk);
-                }
-                catch (Exception e) { LogError("Error loading custom perk: " + e.Message); }
-            }
-            // save vanilla+custom
             Traverse.Create(Globals.Instance).Field("_PerksSource").SetValue(medsPerksSource);
-            LogInfo("Perks loaded!");
 
-            /*
-             *    88888888ba      db         ,ad8888ba,   88      a8P   88888888ba,         db    888888888888    db         
-             *    88      "8b    d88b       d8"'    `"8b  88    ,88'    88      `"8b       d88b        88        d88b        
-             *    88      ,8P   d8'`8b     d8'            88  ,88"      88        `8b     d8'`8b       88       d8'`8b       
-             *    88aaaaaa8P'  d8'  `8b    88             88,d88'       88         88    d8'  `8b      88      d8'  `8b      
-             *    88""""""'   d8YaaaaY8b   88             8888"88,      88         88   d8YaaaaY8b     88     d8YaaaaY8b     
-             *    88         d8""""""""8b  Y8,            88P   Y8b     88         8P  d8""""""""8b    88    d8""""""""8b    
-             *    88        d8'        `8b  Y8a.    .a8P  88     "88,   88      .a8P  d8'        `8b   88   d8'        `8b   
-             *    88       d8'          `8b  `"Y8888Y"'   88       Y8b  88888888Y"'  d8'          `8b  88  d8'          `8b  
-             */
+            // vanilla packdata
             LogInfo("Loading PackData...");
-            medsSecondRunImport2 = new();
-            // vanilla 
             for (int index = 0; index < packDataArray.Length; ++index)
             {
                 try
@@ -926,32 +515,9 @@ namespace Obeliskial_Content
                 }
                 catch (Exception e) { LogError("Error loading vanilla PackData: " + e.Message); }
             }
-            // custom
-            medsFI = (new DirectoryInfo(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", "pack"))).GetFiles("*.json");
-            foreach (FileInfo f in medsFI)
-            {
-                try
-                {
-                    LogDebug("Loading custom packData: " + f.Name);
-                    PackData medsPack = ToData(JsonUtility.FromJson<PackDataText>(File.ReadAllText(f.ToString())));
-                    medsPackDataSource[medsPack.PackId] = UnityEngine.Object.Instantiate<PackData>(medsPack);
-                }
-                catch (Exception e) { LogError("Error loading custom packData: " + e.Message); }
-            }
-            // save vanilla+custom
             Traverse.Create(Globals.Instance).Field("_PackDataSource").SetValue(medsPackDataSource);
-            LogInfo("PackData loaded!");
 
-            /*
-             *     ad88888ba   88        88  88888888ba     ,ad8888ba,   88                  db         ad88888ba    ad88888ba   88888888888  ad88888ba   
-             *    d8"     "8b  88        88  88      "8b   d8"'    `"8b  88                 d88b       d8"     "8b  d8"     "8b  88          d8"     "8b  
-             *    Y8,          88        88  88      ,8P  d8'            88                d8'`8b      Y8,          Y8,          88          Y8,          
-             *    `Y8aaaaa,    88        88  88aaaaaa8P'  88             88               d8'  `8b     `Y8aaaaa,    `Y8aaaaa,    88aaaaa     `Y8aaaaa,    
-             *      `"""""8b,  88        88  88""""""8b,  88             88              d8YaaaaY8b      `"""""8b,    `"""""8b,  88"""""       `"""""8b,  
-             *            `8b  88        88  88      `8b  Y8,            88             d8""""""""8b           `8b          `8b  88                  `8b  
-             *    Y8a     a8P  Y8a.    .a8P  88      a8P   Y8a.    .a8P  88            d8'        `8b  Y8a     a8P  Y8a     a8P  88          Y8a     a8P  
-             *     "Y88888P"    `"Y8888Y"'   88888888P"     `"Y8888Y"'   88888888888  d8'          `8b  "Y88888P"    "Y88888P"   88888888888  "Y88888P"   
-             */
+
             LogInfo("Loading subclasses...");
             // vanilla subclasses
             for (int index = 0; index < subClassDataArray.Length; ++index)
@@ -963,32 +529,9 @@ namespace Obeliskial_Content
                 }
                 catch (Exception e) { LogError("Error loading vanilla subclass: " + e.Message); }
             }
-            // custom subclasses
-            medsFI = (new DirectoryInfo(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", "subclass"))).GetFiles("*.json");
-            foreach (FileInfo f in medsFI)
-            {
-                try
-                {
-                    LogDebug("Loading custom subclass: " + f.Name);
-                    SubClassData medsSubClass = ToData(JsonUtility.FromJson<SubClassDataText>(File.ReadAllText(f.ToString())));
-                    medsSubClassesSource[medsSubClass.Id] = UnityEngine.Object.Instantiate<SubClassData>(medsSubClass);
-                }
-                catch (Exception e) { LogError("Error loading custom subclass: " + e.Message); }
-            }
-            // save vanilla+custom
             Traverse.Create(Globals.Instance).Field("_SubClassSource").SetValue(medsSubClassesSource);
 
-            // connect obelisk challenge packs to subclasses
-            LogDebug("pack-subclass binding commenced...");
-            foreach (string packID in medsSecondRunImport2.Keys)
-            {
-                string subclassID = medsSecondRunImport2[packID].ToLower().Trim();
-                if (medsSubClassesSource.ContainsKey(subclassID) && medsPackDataSource.ContainsKey(packID))
-                    medsPackDataSource[packID].RequiredClass = medsSubClassesSource[subclassID];
-            }
-            Traverse.Create(Globals.Instance).Field("_PackDataSource").SetValue(medsPackDataSource);
 
-            LogInfo("Subclasses loaded!");
             LogInfo("Creating subclass text...");
 
             Dictionary<string, SubClassData> medsSubClassCopy = new();
@@ -1009,16 +552,6 @@ namespace Obeliskial_Content
             Traverse.Create(Globals.Instance).Field("_SubClass").SetValue(medsSubClassCopy);
             LogInfo("Subclass text created!");
 
-            /*
-             *     ad88888ba   88      a8P   88  888b      88   ad88888ba   
-             *    d8"     "8b  88    ,88'    88  8888b     88  d8"     "8b  
-             *    Y8,          88  ,88"      88  88 `8b    88  Y8,          
-             *    `Y8aaaaa,    88,d88'       88  88  `8b   88  `Y8aaaaa,    
-             *      `"""""8b,  8888"88,      88  88   `8b  88    `"""""8b,  
-             *            `8b  88P   Y8b     88  88    `8b 88          `8b  
-             *    Y8a     a8P  88     "88,   88  88     `8888  Y8a     a8P  
-             *     "Y88888P"   88       Y8b  88  88      `888   "Y88888P"   
-             */
             LogInfo("Loading SkinData...");
             // vanilla 
             for (int index = 0; index < skinDataArray.Length; ++index)
@@ -1030,32 +563,7 @@ namespace Obeliskial_Content
                 }
                 catch (Exception e) { LogError("Error loading vanilla SkinData: " + e.Message); }
             }
-            // custom
-            medsFI = (new DirectoryInfo(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", "skin"))).GetFiles("*.json");
-            foreach (FileInfo f in medsFI)
-            {
-                try
-                {
-                    LogDebug("Loading custom SkinData: " + f.Name);
-                    SkinData medsSkin = ToData(JsonUtility.FromJson<SkinDataText>(File.ReadAllText(f.ToString())));
-                    medsSkinsSource[medsSkin.SkinId.ToLower()] = UnityEngine.Object.Instantiate<SkinData>(medsSkin);
-                }
-                catch (Exception e) { LogError("Error loading custom SkinData: " + e.Message); }
-            }
-            // save vanilla+custom
-            Traverse.Create(Globals.Instance).Field("_SkinDataSource").SetValue(medsSkinsSource);
-            LogInfo("SkinData loaded!");
 
-            /*
-             *      ,ad8888ba,         db         88888888ba   88888888ba,    88888888ba         db         ,ad8888ba,   88      a8P   ad88888ba   
-             *     d8"'    `"8b       d88b        88      "8b  88      `"8b   88      "8b       d88b       d8"'    `"8b  88    ,88'   d8"     "8b  
-             *    d8'                d8'`8b       88      ,8P  88        `8b  88      ,8P      d8'`8b     d8'            88  ,88"     Y8,          
-             *    88                d8'  `8b      88aaaaaa8P'  88         88  88aaaaaa8P'     d8'  `8b    88             88,d88'      `Y8aaaaa,    
-             *    88               d8YaaaaY8b     88""""88'    88         88  88""""""8b,    d8YaaaaY8b   88             8888"88,       `"""""8b,  
-             *    Y8,             d8""""""""8b    88    `8b    88         8P  88      `8b   d8""""""""8b  Y8,            88P   Y8b            `8b  
-             *     Y8a.    .a8P  d8'        `8b   88     `8b   88      .a8P   88      a8P  d8'        `8b  Y8a.    .a8P  88     "88,  Y8a     a8P  
-             *      `"Y8888Y"'  d8'          `8b  88      `8b  88888888Y"'    88888888P"  d8'          `8b  `"Y8888Y"'   88       Y8b  "Y88888P"   
-             */
             LogInfo("Loading CardbackData...");
             // vanilla 
             for (int index = 0; index < cardbackDataArray.Length; ++index)
@@ -1067,36 +575,11 @@ namespace Obeliskial_Content
                 }
                 catch (Exception e) { LogError("Error loading vanilla CardbackData: " + e.Message); }
             }
-            // custom
-            medsFI = (new DirectoryInfo(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", "cardback"))).GetFiles("*.json");
-            foreach (FileInfo f in medsFI)
-            {
-                try
-                {
-                    LogDebug("Loading custom CardbackData: " + f.Name);
-                    CardbackData medsCardback = ToData(JsonUtility.FromJson<CardbackDataText>(File.ReadAllText(f.ToString())));
-                    medsCardbacksSource[medsCardback.CardbackId.ToLower()] = UnityEngine.Object.Instantiate<CardbackData>(medsCardback);
-                }
-                catch (Exception e) { LogError("Error loading custom CardbackData: " + e.Message); }
-            }
-            // save vanilla+custom
             Traverse.Create(Globals.Instance).Field("_CardbackDataSource").SetValue(medsCardbacksSource);
-            LogInfo("CardbackData loaded!");
 
-            /*
-             *    88888888ba   88888888888  88888888ba   88      a8P   888b      88    ,ad8888ba,    88888888ba,    88888888888  ad88888ba   
-             *    88      "8b  88           88      "8b  88    ,88'    8888b     88   d8"'    `"8b   88      `"8b   88          d8"     "8b  
-             *    88      ,8P  88           88      ,8P  88  ,88"      88 `8b    88  d8'        `8b  88        `8b  88          Y8,          
-             *    88aaaaaa8P'  88aaaaa      88aaaaaa8P'  88,d88'       88  `8b   88  88          88  88         88  88aaaaa     `Y8aaaaa,    
-             *    88""""""'    88"""""      88""""88'    8888"88,      88   `8b  88  88          88  88         88  88"""""       `"""""8b,  
-             *    88           88           88    `8b    88P   Y8b     88    `8b 88  Y8,        ,8P  88         8P  88                  `8b  
-             *    88           88           88     `8b   88     "88,   88     `8888   Y8a.    .a8P   88      .a8P   88          Y8a     a8P  
-             *    88           88888888888  88      `8b  88       Y8b  88      `888    `"Y8888Y"'    88888888Y"'    88888888888  "Y88888P"   
-             */
+
 
             LogInfo("Loading perknodes...");
-            medsSecondRunImport = new();
-            medsSecondRunImport2 = new();
             // vanilla 
             for (int index = 0; index < perkNodeDataArray.Length; ++index)
             {
@@ -1107,48 +590,9 @@ namespace Obeliskial_Content
                 }
                 catch (Exception e) { LogError("Error loading vanilla perknode: " + e.Message); }
             }
-            // custom
-            medsFI = (new DirectoryInfo(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", "perkNode"))).GetFiles("*.json");
-            foreach (FileInfo f in medsFI)
-            {
-                try
-                {
-                    LogDebug("Loading custom perkNode: " + f.Name);
-                    PerkNodeData medsPN = ToData(JsonUtility.FromJson<PerkNodeDataText>(File.ReadAllText(f.ToString())));
-                    medsPerksNodesSource[medsPN.Id] = UnityEngine.Object.Instantiate<PerkNodeData>(medsPN);
-                }
-                catch (Exception e) { LogError("Error loading custom perkNode: " + e.Message); }
-            }
-            // late binding of perknodes
-            foreach (string key in medsPerksNodesSource.Keys)
-            {
-                try
-                {
-                    if (medsSecondRunImport.ContainsKey(key))
-                    {
-                        medsPerksNodesSource[key].PerksConnected = new PerkNodeData[medsSecondRunImport[key].Length];
-                        for (int a = 0; a < medsSecondRunImport[key].Length; a++)
-                            medsPerksNodesSource[key].PerksConnected[a] = medsPerksNodesSource.ContainsKey(medsSecondRunImport[key][a]) ? medsPerksNodesSource[medsSecondRunImport[key][a]] : (PerkNodeData)null;
-                    }
-                    if (medsSecondRunImport2.ContainsKey(key))
-                        medsPerksNodesSource[key].PerkRequired = medsPerksNodesSource.ContainsKey(medsSecondRunImport2[key]) ? medsPerksNodesSource[medsSecondRunImport2[key]] : (PerkNodeData)null;
-                }
-                catch (Exception e) { LogError("Error performing late binding of perknodes: " + e.Message); }
-            }
-            // save vanilla+custom
             Traverse.Create(Globals.Instance).Field("_PerksNodesSource").SetValue(medsPerksNodesSource);
-            LogInfo("Perknodes loaded!");
 
-            /*
-             *    88888888888  8b           d8  88888888888  888b      88  888888888888     88888888ba   88888888888  ,ad8888ba,     ad88888ba   
-             *    88           `8b         d8'  88           8888b     88       88          88      "8b  88          d8"'    `"8b   d8"     "8b  
-             *    88            `8b       d8'   88           88 `8b    88       88          88      ,8P  88         d8'        `8b  Y8,          
-             *    88aaaaa        `8b     d8'    88aaaaa      88  `8b   88       88          88aaaaaa8P'  88aaaaa    88          88  `Y8aaaaa,    
-             *    88"""""         `8b   d8'     88"""""      88   `8b  88       88          88""""88'    88"""""    88          88    `"""""8b,  
-             *    88               `8b d8'      88           88    `8b 88       88          88    `8b    88         Y8,    "88,,8P          `8b  
-             *    88                `888'       88           88     `8888       88          88     `8b   88          Y8a.    Y88P   Y8a     a8P  
-             *    88888888888        `8'        88888888888  88      `888       88          88      `8b  88888888888  `"Y8888Y"Y8a   "Y88888P"   
-             */
+
             LogInfo("Loading event requirements...");
             // vanilla 
             for (int index = 0; index < eventRequirementDataArray.Length; ++index)
@@ -1170,32 +614,8 @@ namespace Obeliskial_Content
                 }
                 catch (Exception e) { LogError("Error loading vanilla event requirement: " + e.Message); }
             }
-            // custom
-            medsFI = (new DirectoryInfo(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", "eventRequirement"))).GetFiles("*.json");
-            foreach (FileInfo f in medsFI)
-            {
-                try
-                {
-                    LogDebug("Loading custom eventRequirement: " + f.Name);
-                    EventRequirementData medsERD = ToData(JsonUtility.FromJson<EventRequirementDataText>(File.ReadAllText(f.ToString())));
-                    medsEventRequirementDataSource[medsERD.RequirementId] = UnityEngine.Object.Instantiate<EventRequirementData>(medsERD);
-                }
-                catch (Exception e) { LogError("Error loading custom eventRequirement: " + e.Message); }
-            }
-            // save vanilla+custom
             Traverse.Create(Globals.Instance).Field("_Requirements").SetValue(medsEventRequirementDataSource);
-            LogInfo("Event requirements loaded!");
 
-            /*
-             *    88888888ba      db         88  88888888ba    ad88888ba      88888888ba      db         ,ad8888ba,   88      a8P   ad88888ba   
-             *    88      "8b    d88b        88  88      "8b  d8"     "8b     88      "8b    d88b       d8"'    `"8b  88    ,88'   d8"     "8b  
-             *    88      ,8P   d8'`8b       88  88      ,8P  Y8,             88      ,8P   d8'`8b     d8'            88  ,88"     Y8,          
-             *    88aaaaaa8P'  d8'  `8b      88  88aaaaaa8P'  `Y8aaaaa,       88aaaaaa8P'  d8'  `8b    88             88,d88'      `Y8aaaaa,    
-             *    88""""""'   d8YaaaaY8b     88  88""""88'      `"""""8b,     88""""""'   d8YaaaaY8b   88             8888"88,       `"""""8b,  
-             *    88         d8""""""""8b    88  88    `8b            `8b     88         d8""""""""8b  Y8,            88P   Y8b            `8b  
-             *    88        d8'        `8b   88  88     `8b   Y8a     a8P     88        d8'        `8b  Y8a.    .a8P  88     "88,  Y8a     a8P  
-             *    88       d8'          `8b  88  88      `8b   "Y88888P"      88       d8'          `8b  `"Y8888Y"'   88       Y8b  "Y88888P"   
-             */
             LogInfo("Loading pairs packs...");
             // vanilla 
             for (int index = 0; index < playerPairsPackDataArray.Length; ++index)
@@ -1207,32 +627,8 @@ namespace Obeliskial_Content
                 }
                 catch (Exception e) { LogError("Error loading vanilla pairs pack data: " + e.Message); }
             }
-            // custom
-            medsFI = (new DirectoryInfo(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", "pairsPack"))).GetFiles("*.json");
-            foreach (FileInfo f in medsFI)
-            {
-                try
-                {
-                    LogDebug("Loading custom pairsPack: " + f.Name);
-                    CardPlayerPairsPackData medsCPP = ToData(JsonUtility.FromJson<CardPlayerPairsPackDataText>(File.ReadAllText(f.ToString())));
-                    medsCardPlayerPairsPackDataSource[medsCPP.PackId] = UnityEngine.Object.Instantiate<CardPlayerPairsPackData>(medsCPP);
-                }
-                catch (Exception e) { LogError("Error loading custom pairsPack: " + e.Message); }
-            }
-            // save vanilla+custom
             Traverse.Create(Globals.Instance).Field("_CardPlayerPairsPackDataSource").SetValue(medsCardPlayerPairsPackDataSource);
-            LogInfo("Pairs packs loaded!");
 
-            /*
-             *      ,ad8888ba,    ,ad8888ba,    88888888ba   88888888ba        88888888ba      db         ,ad8888ba,   88      a8P   88888888ba,         db    888888888888    db         
-             *     d8"'    `"8b  d8"'    `"8b   88      "8b  88      "8b       88      "8b    d88b       d8"'    `"8b  88    ,88'    88      `"8b       d88b        88        d88b        
-             *    d8'           d8'        `8b  88      ,8P  88      ,8P       88      ,8P   d8'`8b     d8'            88  ,88"      88        `8b     d8'`8b       88       d8'`8b       
-             *    88            88          88  88aaaaaa8P'  88aaaaaa8P'       88aaaaaa8P'  d8'  `8b    88             88,d88'       88         88    d8'  `8b      88      d8'  `8b      
-             *    88            88          88  88""""88'    88""""88'         88""""""'   d8YaaaaY8b   88             8888"88,      88         88   d8YaaaaY8b     88     d8YaaaaY8b     
-             *    Y8,           Y8,        ,8P  88    `8b    88    `8b         88         d8""""""""8b  Y8,            88P   Y8b     88         8P  d8""""""""8b    88    d8""""""""8b    
-             *     Y8a.    .a8P  Y8a.    .a8P   88     `8b   88     `8b   888  88        d8'        `8b  Y8a.    .a8P  88     "88,   88      .a8P  d8'        `8b   88   d8'        `8b   
-             *      `"Y8888Y"'    `"Y8888Y"'    88      `8b  88      `8b  888  88       d8'          `8b  `"Y8888Y"'   88       Y8b  88888888Y"'  d8'          `8b  88  d8'          `8b  
-             */
             LogInfo("Loading CorruptionPackData...");
             // vanilla 
             for (int index = 0; index < corruptionPackDataArray.Length; ++index)
@@ -1244,32 +640,8 @@ namespace Obeliskial_Content
                 }
                 catch (Exception e) { LogError("Error loading vanilla CorruptionPackData: " + e.Message); }
             }
-            // custom
-            medsFI = (new DirectoryInfo(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", "corruptionPack"))).GetFiles("*.json");
-            foreach (FileInfo f in medsFI)
-            {
-                try
-                {
-                    LogDebug("Loading custom corruptionPack: " + f.Name);
-                    CorruptionPackData medsCPD = ToData(JsonUtility.FromJson<CorruptionPackDataText>(File.ReadAllText(f.ToString())));
-                    medsCorruptionPackDataSource[medsCPD.PackName] = UnityEngine.Object.Instantiate<CorruptionPackData>(medsCPD);
-                }
-                catch (Exception e) { LogError("Error loading custom corruptionPack: " + e.Message); }
-            }
-            // save vanilla+custom
             Traverse.Create(Globals.Instance).Field("_CorruptionPackDataSource").SetValue(medsCorruptionPackDataSource);
-            LogInfo("CorruptionPackData loaded!");
 
-            /*
-             *      ,ad8888ba,         db         88888888ba   88888888ba,    88888888ba   88                  db    8b        d8  88888888888  88888888ba   88888888ba      db         ,ad8888ba,   88      a8P   
-             *     d8"'    `"8b       d88b        88      "8b  88      `"8b   88      "8b  88                 d88b    Y8,    ,8P   88           88      "8b  88      "8b    d88b       d8"'    `"8b  88    ,88'    
-             *    d8'                d8'`8b       88      ,8P  88        `8b  88      ,8P  88                d8'`8b    Y8,  ,8P    88           88      ,8P  88      ,8P   d8'`8b     d8'            88  ,88"      
-             *    88                d8'  `8b      88aaaaaa8P'  88         88  88aaaaaa8P'  88               d8'  `8b    "8aa8"     88aaaaa      88aaaaaa8P'  88aaaaaa8P'  d8'  `8b    88             88,d88'       
-             *    88               d8YaaaaY8b     88""""88'    88         88  88""""""'    88              d8YaaaaY8b    `88'      88"""""      88""""88'    88""""""'   d8YaaaaY8b   88             8888"88,      
-             *    Y8,             d8""""""""8b    88    `8b    88         8P  88           88             d8""""""""8b    88       88           88    `8b    88         d8""""""""8b  Y8,            88P   Y8b     
-             *     Y8a.    .a8P  d8'        `8b   88     `8b   88      .a8P   88           88            d8'        `8b   88       88           88     `8b   88        d8'        `8b  Y8a.    .a8P  88     "88,   
-             *      `"Y8888Y"'  d8'          `8b  88      `8b  88888888Y"'    88           88888888888  d8'          `8b  88       88888888888  88      `8b  88       d8'          `8b  `"Y8888Y"'   88       Y8b  
-             */
             LogInfo("Loading CardPlayerPackData...");
             // vanilla 
             for (int index = 0; index < cardPlayerPackDataArray.Length; ++index)
@@ -1281,32 +653,8 @@ namespace Obeliskial_Content
                 }
                 catch (Exception e) { LogError("Error loading vanilla CardPlayerPackData: " + e.Message); }
             }
-            // custom
-            medsFI = (new DirectoryInfo(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", "cardPlayerPack"))).GetFiles("*.json");
-            foreach (FileInfo f in medsFI)
-            {
-                try
-                {
-                    LogDebug("Loading custom CardPlayerPackData: " + f.Name);
-                    CardPlayerPackData medsCPP = ToData(JsonUtility.FromJson<CardPlayerPackDataText>(File.ReadAllText(f.ToString())));
-                    medsCardPlayerPackDataSource[medsCPP.PackId] = UnityEngine.Object.Instantiate<CardPlayerPackData>(medsCPP);
-                }
-                catch (Exception e) { LogError("Error loading custom CardPlayerPackData: " + e.Message); }
-            }
-            // save vanilla+custom
             Traverse.Create(Globals.Instance).Field("_CardPlayerPackDataSource").SetValue(medsCardPlayerPackDataSource);
-            LogInfo("CardPlayerPackData loaded!");
 
-            /*
-             *      ,ad8888ba,   88  888b      88  88888888888  88b           d88         db    888888888888  88    ,ad8888ba,    ad88888ba   
-             *     d8"'    `"8b  88  8888b     88  88           888b         d888        d88b        88       88   d8"'    `"8b  d8"     "8b  
-             *    d8'            88  88 `8b    88  88           88`8b       d8'88       d8'`8b       88       88  d8'            Y8,          
-             *    88             88  88  `8b   88  88aaaaa      88 `8b     d8' 88      d8'  `8b      88       88  88             `Y8aaaaa,    
-             *    88             88  88   `8b  88  88"""""      88  `8b   d8'  88     d8YaaaaY8b     88       88  88               `"""""8b,  
-             *    Y8,            88  88    `8b 88  88           88   `8b d8'   88    d8""""""""8b    88       88  Y8,                    `8b  
-             *     Y8a.    .a8P  88  88     `8888  88           88    `888'    88   d8'        `8b   88       88   Y8a.    .a8P  Y8a     a8P  
-             *      `"Y8888Y"'   88  88      `888  88888888888  88     `8'     88  d8'          `8b  88       88    `"Y8888Y"'    "Y88888P"   
-             */
             LogInfo("Loading cinematic data...");
             // vanilla 
             for (int index = 0; index < cinematicDataArray.Length; ++index)
@@ -1318,34 +666,8 @@ namespace Obeliskial_Content
                 }
                 catch (Exception e) { LogError("Error loading vanilla cinematic: " + e.Message); }
             }
-            // custom
-            medsFI = (new DirectoryInfo(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", "cinematic"))).GetFiles("*.json");
-            foreach (FileInfo f in medsFI)
-            {
-                try
-                {
-                    LogDebug("Loading custom cinematic: " + f.Name);
-                    CinematicData medsCinematic = ToData(JsonUtility.FromJson<CinematicDataText>(File.ReadAllText(f.ToString())));
-                    medsCinematicDataSource[medsCinematic.CinematicId.ToLower()] = UnityEngine.Object.Instantiate<CinematicData>(medsCinematic);
-                }
-                catch (Exception e) { LogError("Error loading custom cinematic: " + e.Message); }
-            }
-            // save vanilla+custom
             Traverse.Create(Globals.Instance).Field("_Cinematics").SetValue(medsCinematicDataSource);
-            LogInfo("Cinematic data loaded!");
 
-            // #TODO: link cinematics to combat
-
-            /*
-             *      ,ad8888ba,    ,ad8888ba,    88b           d88  88888888ba         db    888888888888     88888888ba,         db    888888888888    db         
-             *     d8"'    `"8b  d8"'    `"8b   888b         d888  88      "8b       d88b        88          88      `"8b       d88b        88        d88b        
-             *    d8'           d8'        `8b  88`8b       d8'88  88      ,8P      d8'`8b       88          88        `8b     d8'`8b       88       d8'`8b       
-             *    88            88          88  88 `8b     d8' 88  88aaaaaa8P'     d8'  `8b      88          88         88    d8'  `8b      88      d8'  `8b      
-             *    88            88          88  88  `8b   d8'  88  88""""""8b,    d8YaaaaY8b     88          88         88   d8YaaaaY8b     88     d8YaaaaY8b     
-             *    Y8,           Y8,        ,8P  88   `8b d8'   88  88      `8b   d8""""""""8b    88          88         8P  d8""""""""8b    88    d8""""""""8b    
-             *     Y8a.    .a8P  Y8a.    .a8P   88    `888'    88  88      a8P  d8'        `8b   88          88      .a8P  d8'        `8b   88   d8'        `8b   
-             *      `"Y8888Y"'    `"Y8888Y"'    88     `8'     88  88888888P"  d8'          `8b  88          88888888Y"'  d8'          `8b  88  d8'          `8b  
-             */
             LogInfo("Loading combat data...");
             // vanilla 
             for (int index = 0; index < combatDataArray.Length; ++index)
@@ -1357,32 +679,8 @@ namespace Obeliskial_Content
                 }
                 catch (Exception e) { LogError("Error loading vanilla combatData: " + e.Message); }
             }
-            // custom
-            medsFI = (new DirectoryInfo(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", "combatData"))).GetFiles("*.json");
-            foreach (FileInfo f in medsFI)
-            {
-                try
-                {
-                    LogDebug("Loading custom combatData: " + f.Name);
-                    CombatData medsCombat = ToData(JsonUtility.FromJson<CombatDataText>(File.ReadAllText(f.ToString())));
-                    medsCombatDataSource[medsCombat.CombatId] = UnityEngine.Object.Instantiate<CombatData>(medsCombat);
-                }
-                catch (Exception e) { LogError("Error loading custom combatData: " + e.Message); }
-            }
-            // save vanilla+custom
             Traverse.Create(Globals.Instance).Field("_CombatDataSource").SetValue(medsCombatDataSource);
-            LogInfo("Combat data loaded!");
 
-            /*
-             *    88           ,ad8888ba,      ,ad8888ba,  888888888888  88888888ba,         db    888888888888    db         
-             *    88          d8"'    `"8b    d8"'    `"8b      88       88      `"8b       d88b        88        d88b        
-             *    88         d8'        `8b  d8'        `8b     88       88        `8b     d8'`8b       88       d8'`8b       
-             *    88         88          88  88          88     88       88         88    d8'  `8b      88      d8'  `8b      
-             *    88         88          88  88          88     88       88         88   d8YaaaaY8b     88     d8YaaaaY8b     
-             *    88         Y8,        ,8P  Y8,        ,8P     88       88         8P  d8""""""""8b    88    d8""""""""8b    
-             *    88          Y8a.    .a8P    Y8a.    .a8P      88       88      .a8P  d8'        `8b   88   d8'        `8b   
-             *    88888888888  `"Y8888Y"'      `"Y8888Y"'       88       88888888Y"'  d8'          `8b  88  d8'          `8b  
-             */
             LogInfo("Loading LootData...");
             // vanilla 
             for (int index = 0; index < lootDataArray.Length; ++index)
@@ -1394,32 +692,8 @@ namespace Obeliskial_Content
                 }
                 catch (Exception e) { LogError("Error loading vanilla LootData: " + e.Message); }
             }
-            // custom
-            medsFI = (new DirectoryInfo(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", "loot"))).GetFiles("*.json");
-            foreach (FileInfo f in medsFI)
-            {
-                try
-                {
-                    LogDebug("Loading custom LootData: " + f.Name);
-                    LootData medsLoot = ToData(JsonUtility.FromJson<LootDataText>(File.ReadAllText(f.ToString())));
-                    medsLootDataSource[medsLoot.Id] = UnityEngine.Object.Instantiate<LootData>(medsLoot);
-                }
-                catch (Exception e) { LogError("Error loading custom LootData: " + e.Message); }
-            }
-            // save vanilla+custom
             Traverse.Create(Globals.Instance).Field("_LootDataSource").SetValue(medsLootDataSource);
-            LogInfo("LootData loaded!");
 
-            /*
-             *    888888888888   ,ad8888ba,    888b      88  88888888888  ad88888ba   
-             *             ,88  d8"'    `"8b   8888b     88  88          d8"     "8b  
-             *           ,88"  d8'        `8b  88 `8b    88  88          Y8,          
-             *         ,88"    88          88  88  `8b   88  88aaaaa     `Y8aaaaa,    
-             *       ,88"      88          88  88   `8b  88  88"""""       `"""""8b,  
-             *     ,88"        Y8,        ,8P  88    `8b 88  88                  `8b  
-             *    88"           Y8a.    .a8P   88     `8888  88          Y8a     a8P  
-             *    888888888888   `"Y8888Y"'    88      `888  88888888888  "Y88888P"   
-             */
             LogInfo("Loading zone data...");
             // vanilla 
             for (int index = 0; index < zoneDataArray.Length; ++index)
@@ -1431,36 +705,9 @@ namespace Obeliskial_Content
                 }
                 catch (Exception e) { LogError("Error loading vanilla zone data: " + e.Message); }
             }
-            // custom
-            medsFI = (new DirectoryInfo(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", "zone"))).GetFiles("*.json");
-            foreach (FileInfo f in medsFI)
-            {
-                try
-                {
-                    LogDebug("Loading custom zone data: " + f.Name);
-                    ZoneData medsZone = ToData(JsonUtility.FromJson<ZoneDataText>(File.ReadAllText(f.ToString())));
-                    medsZoneDataSource[medsZone.ZoneId.ToLower()] = UnityEngine.Object.Instantiate<ZoneData>(medsZone);
-                    medsCustomZones[medsZone.ZoneId.ToLower()] = JsonUtility.FromJson<ZoneDataText>(File.ReadAllText(f.ToString()));
-                }
-                catch (Exception e) { LogError("Error loading custom zone data: " + e.Message); }
-            }
-            // save vanilla+custom
             Traverse.Create(Globals.Instance).Field("_ZoneDataSource").SetValue(medsZoneDataSource);
-            LogInfo("Zone data loaded!");
 
-            /*
-             *    888b      88    ,ad8888ba,    88888888ba,    88888888888     88888888ba,         db    888888888888    db         
-             *    8888b     88   d8"'    `"8b   88      `"8b   88              88      `"8b       d88b        88        d88b        
-             *    88 `8b    88  d8'        `8b  88        `8b  88              88        `8b     d8'`8b       88       d8'`8b       
-             *    88  `8b   88  88          88  88         88  88aaaaa         88         88    d8'  `8b      88      d8'  `8b      
-             *    88   `8b  88  88          88  88         88  88"""""         88         88   d8YaaaaY8b     88     d8YaaaaY8b     
-             *    88    `8b 88  Y8,        ,8P  88         8P  88              88         8P  d8""""""""8b    88    d8""""""""8b    
-             *    88     `8888   Y8a.    .a8P   88      .a8P   88              88      .a8P  d8'        `8b   88   d8'        `8b   
-             *    88      `888    `"Y8888Y"'    88888888Y"'    88888888888     88888888Y"'  d8'          `8b  88  d8'          `8b  
-             */
-            LogInfo("Loading node data...");
-            medsSecondRunImport = new();
-            medsSecondRunImport2 = new();
+
             // vanilla 
             for (int index = 0; index < nodeDataArray.Length; ++index)
             {
@@ -1477,67 +724,11 @@ namespace Obeliskial_Content
                 }
                 catch (Exception e) { LogError("Error loading vanilla node data: " + e.Message); }
             }
-            // custom
-            medsFI = (new DirectoryInfo(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", "node"))).GetFiles("*.json");
-            foreach (FileInfo f in medsFI)
-            {
-                try
-                {
-                    LogDebug("Loading custom node data: " + f.Name);
-                    NodeData medsNode = ToData(JsonUtility.FromJson<NodeDataText>(File.ReadAllText(f.ToString())));
-                    string lower = medsNode.NodeId.ToLower();
-                    medsNodeDataSource[lower] = UnityEngine.Object.Instantiate<NodeData>(medsNode);
-                    medsNodeDataSource[lower].name = lower;
-                    if (!medsNodesByZone.ContainsKey(medsNode.NodeZone.ZoneId.ToLower()))
-                        medsNodesByZone[medsNode.NodeZone.ZoneId.ToLower()] = new List<NodeDataText>();
-                    if (!medsNodesByZone[medsNode.NodeZone.ZoneId.ToLower()].Contains(JsonUtility.FromJson<NodeDataText>(File.ReadAllText(f.ToString()))))
-                        medsNodesByZone[medsNode.NodeZone.ZoneId.ToLower()].Add(JsonUtility.FromJson<NodeDataText>(File.ReadAllText(f.ToString())));
-                }
-                catch (Exception e) { LogError("Error loading custom node data: " + e.Message); }
-            }
-            // late binding of nodesconnected
-            LogDebug("Late binding of NodesConnected");
-            foreach (KeyValuePair<string, string[]> kvp in medsSecondRunNodesConnected)
-            {
-                try
-                {
-                    medsNodeDataSource[kvp.Key].NodesConnected = new NodeData[kvp.Value.Length];
-                    for (int a = 0; a < kvp.Value.Length; a++)
-                        medsNodeDataSource[kvp.Key].NodesConnected[a] = GetNode(kvp.Value[a]);
-                }
-                catch (Exception e) { LogError("Error performing late binding of NodesConnected: " + e.Message); }
-            }
-            LogDebug("Late binding of NodesConnectedRequirement");
-            // late binding of nodesconnectedrequirement
-            foreach (KeyValuePair<string, string[]> kvp in medsSecondRunImport)
-            {
-                try
-                {
-                    medsNodeDataSource[kvp.Key].NodesConnectedRequirement = new NodesConnectedRequirement[kvp.Value.Length];
-                    for (int a = 0; a < kvp.Value.Length; a++)
-                        medsNodeDataSource[kvp.Key].NodesConnectedRequirement[a] = ToData(JsonUtility.FromJson<NodesConnectedRequirementText>(kvp.Value[a]));
-                }
-                catch (Exception e) { LogError("Error performing late binding of NodesConnectedRequirement: " + e.Message); }
-            }
-            // save vanilla+custom nodes
             Traverse.Create(Globals.Instance).Field("_NodeDataSource").SetValue(medsNodeDataSource);
             Traverse.Create(Globals.Instance).Field("_NodeCombatEventRelation").SetValue(medsNodeCombatEventRelation);
 
-            /*
-             *    88888888888  8b           d8  88888888888  888b      88  888888888888  ad88888ba   
-             *    88           `8b         d8'  88           8888b     88       88      d8"     "8b  
-             *    88            `8b       d8'   88           88 `8b    88       88      Y8,          
-             *    88aaaaa        `8b     d8'    88aaaaa      88  `8b   88       88      `Y8aaaaa,    
-             *    88"""""         `8b   d8'     88"""""      88   `8b  88       88        `"""""8b,  
-             *    88               `8b d8'      88           88    `8b 88       88              `8b  
-             *    88                `888'       88           88     `8888       88      Y8a     a8P  
-             *    88888888888        `8'        88888888888  88      `888       88       "Y88888P"   
-             */
+
             LogInfo("Loading events...");
-            medsSecondRunImport = new();
-            medsNodeEvent = new();
-            medsNodeEventPercent = new();
-            medsNodeEventPriority = new();
             // vanilla 
             for (int index = 0; index < eventDataArray.Length; ++index)
             {
@@ -1550,86 +741,1083 @@ namespace Obeliskial_Content
                 }
                 catch (Exception e) { LogError("Error loading vanilla events: " + e.Message); }
             }
-            // custom
-            medsFI = (new DirectoryInfo(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", "event"))).GetFiles("*.json");
-            foreach (FileInfo f in medsFI)
-            {
-                try
-                {
-                    LogDebug("Loading custom event: " + f.Name);
-                    EventData medsEvent = ToData(JsonUtility.FromJson<EventDataText>(File.ReadAllText(f.ToString())));
-                    medsEventDataSource[medsEvent.EventId] = UnityEngine.Object.Instantiate<EventData>(medsEvent);
-                }
-                catch (Exception e) { LogError("Error loading custom events: " + e.Message); }
-            }
             // save vanilla+custom events
             Traverse.Create(Globals.Instance).Field("_Events").SetValue(medsEventDataSource);
-            LogInfo("Events loaded!");
 
-            medsFI = (new DirectoryInfo(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", "eventReply"))).GetFiles("*.json");
-            foreach (FileInfo f in medsFI)
+            LogInfo("Loading challenge traits...");
+            // vanilla 
+            for (int index = 0; index < challengeTraitArray.Length; ++index)
             {
                 try
                 {
-                    LogDebug("Loading custom eventReply: " + f.Name);
-                    string medsERDTString = File.ReadAllText(f.ToString());
-                    EventReplyDataText medsERDT = JsonUtility.FromJson<EventReplyDataText>(medsERDTString);
-                    if (medsSecondRunImport.ContainsKey(medsERDT.medsEvent.ToLower()))
+                    if (medsVanillaContentLog.Value) { LogDebug("Loading vanilla challengeTrait: " + challengeTraitArray[index].Id); };
+                    medsChallengeTraitsSource[challengeTraitArray[index].Id.ToLower()] = UnityEngine.Object.Instantiate<ChallengeTrait>(challengeTraitArray[index]);
+                }
+                catch (Exception e) { LogError("Error loading vanilla challengeTrait: " + e.Message); }
+            }
+            Traverse.Create(Globals.Instance).Field("_ChallengeTraitsSource").SetValue(medsChallengeTraitsSource);
+
+            LogInfo("Loading challenge data...");
+            // vanilla 
+            for (int index = 0; index < challengeDataArray.Length; ++index)
+            {
+                try
+                {
+                    if (medsVanillaContentLog.Value) { LogDebug("Loading vanilla challengeData: " + challengeDataArray[index].Id); };
+                    medsChallengeDataSource[challengeDataArray[index].Id.ToLower()] = UnityEngine.Object.Instantiate<ChallengeData>(challengeDataArray[index]);
+                }
+                catch (Exception e) { LogError("Error loading vanilla challengeData: " + e.Message); }
+            }
+            Traverse.Create(Globals.Instance).Field("_WeeklyDataSource").SetValue(medsChallengeDataSource);
+
+
+
+
+
+
+
+
+
+
+
+
+            int customCount;
+            foreach (string sFolderName in medsModFolderNames)
+            {
+                if (!Directory.Exists(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", sFolderName)))
+                {
+                    LogError("Cannot find content pack folder: " + sFolderName);
+                    continue;
+                }
+                else
+                {
+                    LogInfo("Loading content pack: " + sFolderName);
+                }
+
+                // custom audioClips
+                if (Directory.Exists(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", sFolderName, "audio")))
+                {
+                    customCount = 0;
+                    LogInfo("Loading AudioClips from " + sFolderName);
+                    medsFI = (new DirectoryInfo(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", sFolderName, "audio"))).GetFiles("*.wav");
+                    foreach (FileInfo f in medsFI)
                     {
-                        string[] tempReplies = medsSecondRunImport[medsERDT.medsEvent.ToLower()];
-                        Array.Resize(ref tempReplies, tempReplies.Length + 1);
-                        tempReplies[tempReplies.Length - 1] = medsERDTString;
-                        medsSecondRunImport[medsERDT.medsEvent.ToLower()] = tempReplies;
+                        LogInfo("Loading " + sFolderName + " AudioClip: " + f.Name);
+                        string path = "file:///" + f.ToString().Replace("\\", "/");
+                        try
+                        {
+                            using (UnityWebRequest www = UnityWebRequestMultimedia.GetAudioClip(path, AudioType.WAV))
+                            {
+                                www.SendWebRequest();
+                                while (!www.isDone) { }
+                                if (www.result == UnityWebRequest.Result.ConnectionError)
+                                {
+                                    LogError(www.error);
+                                }
+                                else
+                                {
+                                    AudioClip ac = DownloadHandlerAudioClip.GetContent(www);
+                                    ac.name = Path.GetFileNameWithoutExtension(f.Name);
+                                    medsAudioClips[Path.GetFileNameWithoutExtension(f.Name)] = ac;
+                                    customCount++;
+                                }
+                            }
+                        }
+                        catch (Exception e) { LogError("Error loading custom " + sFolderName + " AudioClip " + f.Name + ": " + e.Message); }
                     }
-                    else
+                    if (customCount > 0) { LogInfo("Loaded " + customCount + " AudioClips from " + sFolderName); };
+                }
+
+                // custom sprites
+                if (Directory.Exists(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", sFolderName, "sprite")))
+                {
+                    customCount = 0;
+                    LogInfo("Loading Sprites from " + sFolderName);
+                    medsFI = (new DirectoryInfo(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", sFolderName, "sprite"))).GetFiles("*.png");
+                    foreach (FileInfo f in medsFI)
                     {
-                        // #TODO: REWRITE THIS
-                        // incorporate it into the reply-event below? so it just expands existing event array there
-                        // rather than making a new one incorporating that one here, adding to it, then converting it BACK there?
-                        // xdd
-                        if (medsEventDataSource.ContainsKey(medsERDT.medsEvent.ToLower()))
+                        LogInfo("Loading " + sFolderName + " Sprite: " + f.Name);
+                        try
                         {
-                            medsSecondRunImport[medsERDT.medsEvent.ToLower()] = new string[medsEventDataSource[medsERDT.medsEvent.ToLower()].Replys.Length + 1];
-                            for (int a = 0; a < medsEventDataSource[medsERDT.medsEvent.ToLower()].Replys.Length; a++)
-                                medsSecondRunImport[medsERDT.medsEvent.ToLower()][a] = JsonUtility.ToJson(ToText(medsEventDataSource[medsERDT.medsEvent.ToLower()].Replys[a]));
-                            medsSecondRunImport[medsERDT.medsEvent.ToLower()][medsEventDataSource[medsERDT.medsEvent.ToLower()].Replys.Length] = medsERDTString;
+                            spriteTexture = new Texture2D(0, 0);
+                            spriteTexture.LoadImage(File.ReadAllBytes(f.ToString()));
+                            Sprite medsSprite = Sprite.Create(spriteTexture, new Rect(0, 0, spriteTexture.width, spriteTexture.height), new Vector2(0.5f, 0.5f), 100f, 0, SpriteMeshType.FullRect);
+                            medsSprite.name = Path.GetFileNameWithoutExtension(f.Name).Trim().ToLower();
+                            medsSprites[Path.GetFileNameWithoutExtension(f.Name).Trim().ToLower()] = medsSprite;
+                            customCount++;
                         }
-                        else
+                        catch (Exception e) { LogError("Error loading custom " + sFolderName + " Sprite " + f.Name + ": " + e.Message); }
+                    }
+                    if (customCount > 0) { LogInfo("Loaded " + customCount + " Sprites from " + sFolderName); };
+                }
+
+                // custom gameObjects
+                // #TODO: _actual_ custom gameObjects
+                if (Directory.Exists(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", sFolderName, "gameObject")))
+                {
+                    customCount = 0;
+                    LogInfo("Loading gameObjects from " + sFolderName);
+                    medsFI = (new DirectoryInfo(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", sFolderName, "gameObject"))).GetFiles("*.json");
+                    foreach (FileInfo f in medsFI)
+                    {
+                        LogInfo("Loading " + sFolderName + " gameObject retexture: " + f.Name);
+                        try
                         {
-                            medsSecondRunImport[medsERDT.medsEvent.ToLower()] = new string[1] { medsERDTString };
+                            GameObjectRetexture medsGOR = JsonUtility.FromJson<GameObjectRetexture>(File.ReadAllText(f.ToString()));
+                            GameObject newGO = GetGO(medsGOR.BaseGameObjectID);
+                            if (newGO != null)
+                            {
+                                newGO.name = medsGOR.NewGameObjectID;
+                                Sprite newTexture = medsGOR.SpriteToUse.IsNullOrWhiteSpace() ? (Sprite)null : GetSprite(medsGOR.SpriteToUse);
+                                newGO.transform.localScale = new Vector3(newGO.transform.localScale.x * medsGOR.ScaleX * (medsGOR.Flip ? -1 : 1), newGO.transform.localScale.y * medsGOR.ScaleY, newGO.transform.localScale.z);
+                                if (newTexture != null)
+                                {
+                                    try
+                                    {
+                                        SpriteRenderer[] GOSRs = newGO.GetComponentsInChildren<SpriteRenderer>(true);
+                                        foreach (SpriteRenderer SR in GOSRs)
+                                        {
+                                            if (SR.sprite != (Sprite)null && SR.gameObject.GetComponent<UnityEngine.U2D.Animation.SpriteSkin>() != null)// && SR.sprite.texture != (Texture2D)null)
+                                            {
+
+                                                LogDebug("trying to change sprite for spriterenderer: " + SR.name);
+                                                // attempt 3: make new sprites, set bones, set bind poses
+                                                Sprite actualNewSprite = Sprite.Create(newTexture.texture, new Rect(SR.sprite.rect.x, SR.sprite.rect.y, SR.sprite.rect.width, SR.sprite.rect.height), new Vector2(SR.sprite.pivot.x / SR.sprite.rect.width, SR.sprite.pivot.y / SR.sprite.rect.height));
+                                                int vertexCount = SR.sprite.GetVertexCount();
+
+                                                NativeArray<Vector2> uvArr = new(vertexCount, Allocator.Temp);
+                                                NativeArray<Vector3> vertexArr = new(vertexCount, Allocator.Temp);
+                                                NativeArray<Vector4> tangentArr = new(vertexCount, Allocator.Temp);
+                                                NativeArray<BoneWeight> blendWeightArr = new(vertexCount, Allocator.Temp);
+
+                                                NativeSlice<Vector2> uvRef = SR.sprite.GetVertexAttribute<Vector2>(VertexAttribute.TexCoord0);
+                                                NativeSlice<Vector3> vertexRef = SR.sprite.GetVertexAttribute<Vector3>(VertexAttribute.Position);
+                                                NativeSlice<Vector4> tangentRef = SR.sprite.GetVertexAttribute<Vector4>(VertexAttribute.Tangent);
+                                                NativeSlice<BoneWeight> blendWeightRef = SR.sprite.GetVertexAttribute<BoneWeight>(VertexAttribute.BlendWeight);
+
+                                                for (var i = 0; i < vertexCount; ++i)
+                                                {
+                                                    uvArr[i] = uvRef[i];
+                                                    vertexArr[i] = vertexRef[i];
+                                                    tangentArr[i] = tangentRef[i];
+                                                    blendWeightArr[i] = blendWeightRef[i];
+                                                }
+                                                actualNewSprite.SetIndices(SR.sprite.GetIndices());
+                                                actualNewSprite.SetVertexCount(SR.sprite.GetVertexCount());
+                                                actualNewSprite.SetVertexAttribute(VertexAttribute.TexCoord0, uvArr);
+                                                actualNewSprite.SetVertexAttribute(VertexAttribute.Position, vertexArr);
+                                                actualNewSprite.SetVertexAttribute(VertexAttribute.Tangent, tangentArr);
+                                                actualNewSprite.SetVertexAttribute(VertexAttribute.BlendWeight, blendWeightArr);
+                                                uvArr.Dispose();
+                                                vertexArr.Dispose();
+                                                tangentArr.Dispose();
+                                                blendWeightArr.Dispose();
+                                                actualNewSprite.SetBones(SR.sprite.GetBones());
+                                                actualNewSprite.SetBindPoses(SR.sprite.GetBindPoses());
+                                                SR.sprite = actualNewSprite;
+                                            }
+                                        }
+                                    }
+                                    catch
+                                    {
+                                        LogError("Unable to retexture gameObject " + medsGOR.NewGameObjectID + " for unknown reason! Please let Meds know.");
+                                    }
+                                }
+                                else if (!medsGOR.SpriteToUse.IsNullOrWhiteSpace())
+                                {
+                                    LogError("Could not find gameObject retexture sprite: " + medsGOR.SpriteToUse);
+                                }
+                                medsGOs[medsGOR.NewGameObjectID] = newGO;
+                                customCount++;
+                            }
+                            else
+                            {
+                                LogError("Could not find base gameObject with ID: " + medsGOR.BaseGameObjectID);
+                            }
+                        }
+                        catch (Exception e) { LogError("Error loading custom " + sFolderName + " GameObject " + f.Name + ": " + e.Message); }
+                    }
+                    if (customCount > 0) { LogInfo("Loaded " + customCount + " gameObject retextures from " + sFolderName); };
+                }
+
+                // custom keynotes
+                if (Directory.Exists(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", sFolderName, "keyNote")))
+                {
+                    customCount = 0;
+                    LogInfo("Loading keynotes from " + sFolderName);
+                    medsFI = (new DirectoryInfo(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", sFolderName, "keyNote"))).GetFiles("*.json");
+                    foreach (FileInfo f in medsFI)
+                    {
+                        LogInfo("Loading " + sFolderName + " keynote: " + f.Name);
+                        try
+                        {
+                            KeyNotesData medsKeyNote = ToData(JsonUtility.FromJson<KeyNotesDataText>(File.ReadAllText(f.ToString())));
+                            medsKeyNotesDataSource[medsKeyNote.Id] = UnityEngine.Object.Instantiate<KeyNotesData>(medsKeyNote);
+                            customCount++;
+                        }
+                        catch (Exception e) { LogError("Error loading custom " + sFolderName + " keynote " + f.Name + ": " + e.Message); }
+                    }
+                    Globals.Instance.KeyNotes = medsKeyNotesDataSource;
+                    if (customCount > 0) { LogInfo("Loaded " + customCount + " keynotes from " + sFolderName); };
+                }
+
+                // custom auras & curses
+                if (Directory.Exists(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", sFolderName, "auraCurse")))
+                {
+                    customCount = 0;
+                    LogInfo("Loading auraCurses from " + sFolderName);
+                    medsFI = (new DirectoryInfo(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", sFolderName, "auraCurse"))).GetFiles("*.json");
+                    foreach (FileInfo f in medsFI)
+                    {
+                        LogInfo("Loading " + sFolderName + " auraCurse: " + f.Name);
+                        try
+                        {
+                            AuraCurseData medsACSingle = ToData(JsonUtility.FromJson<AuraCurseDataText>(File.ReadAllText(f.ToString())));
+                            medsACSingle.Init();
+                            medsAurasCursesSource[medsACSingle.Id] = UnityEngine.Object.Instantiate<AuraCurseData>(medsACSingle);
+                            if (!medsACIndex.Contains(medsACSingle.Id.ToLower()))
+                                medsACIndex.Add(medsACSingle.Id.ToLower());
+                            customCount++;
+                        }
+                        catch (Exception e) { LogError("Error loading custom " + sFolderName + " auraCurse " + f.Name + ": " + e.Message); }
+                    }
+                    Traverse.Create(Globals.Instance).Field("_AurasCursesSource").SetValue(medsAurasCursesSource);
+                    Traverse.Create(Globals.Instance).Field("_AurasCursesIndex").SetValue(medsACIndex);
+                    Traverse.Create(Globals.Instance).Field("_AurasCurses").SetValue(medsAurasCursesSource);
+                    if (customCount > 0) { LogInfo("Loaded " + customCount + " auraCurses from " + sFolderName); };
+                }
+
+                // custom cards
+                if (Directory.Exists(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", sFolderName, "card")))
+                {
+                    customCount = 0;
+                    medsCardsNeedingItems = new();
+                    medsCardsNeedingItemEnchants = new();
+                    LogInfo("Loading cards from " + sFolderName);
+                    medsFI = (new DirectoryInfo(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", sFolderName, "card"))).GetFiles("*.json");
+                    medsSecondRunImport = new();
+                    medsSecondRunImport2 = new();
+                    Dictionary<string, CardData> medsCardsCustom = new();
+                    foreach (FileInfo f in medsFI)
+                    {
+                        LogInfo("Loading " + sFolderName + " card: " + f.Name);
+                        try
+                        {
+                            CardData medsCard = ToData(JsonUtility.FromJson<CardDataText>(File.ReadAllText(f.ToString())));
+                            // #TODO: UNLOCKS?
+                            if (!medsCustomUnlocks.Contains(medsCard.Id))
+                                medsCustomUnlocks.Add(medsCard.Id);
+                            medsCardsSource[medsCard.Id] = UnityEngine.Object.Instantiate<CardData>(medsCard);
+                            customCount++;
+                        }
+                        catch (Exception e) { LogError("Error loading custom " + sFolderName + " card " + f.Name + ": " + e.Message); }
+                    }
+                    SortedDictionary<string, CardData> medsCardsTemp = new SortedDictionary<string, CardData>(medsCardsSource);
+                    medsCardsSource = new Dictionary<string, CardData>(medsCardsTemp);
+                    // do a second run to link AddCardList
+                    LogInfo("Loading custom card component for " + sFolderName + ": AddCardList...");
+                    foreach (string key in medsSecondRunImport.Keys)
+                    {
+                        try
+                        {
+                            medsCardsSource[key].AddCardList = new CardData[medsSecondRunImport[key].Length];
+                            for (int a = 0; a < medsSecondRunImport[key].Length; a++)
+                            {
+                                if (medsCardsSource.ContainsKey(medsSecondRunImport[key][a]))
+                                    medsCardsSource[key].AddCardList[a] = medsCardsSource[medsSecondRunImport[key][a]];
+                                else
+                                    medsCardsSource[key].AddCardList[a] = (CardData)null;
+                            }
+                        }
+                        catch (Exception e) { LogError("Error loading AddCardList: " + e.Message); }
+                    }
+                    // do a second run to link UpgradesToRare
+                    LogInfo("Loading custom card component for " + sFolderName + ": UpgradesToRare...");
+                    foreach (string key in medsSecondRunImport2.Keys)
+                    {
+                        try
+                        {
+                            if (medsCardsSource.ContainsKey(medsSecondRunImport2[key]))
+                                medsCardsSource[key].UpgradesToRare = medsCardsSource[medsSecondRunImport2[key]];
+                        }
+                        catch (Exception e) { LogError("Error loading UpgradesToRare: " + e.Message); }
+                    }
+                    Traverse.Create(Globals.Instance).Field("_CardsSource").SetValue(medsCardsSource);
+                    if (customCount > 0) { LogInfo("Loaded " + customCount + " cards from " + sFolderName); };
+                }
+
+                // custom tierRewards
+                if (Directory.Exists(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", sFolderName, "tierReward")))
+                {
+                    customCount = 0;
+                    LogInfo("Loading tierRewards from " + sFolderName);
+                    medsFI = (new DirectoryInfo(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", sFolderName, "tierReward"))).GetFiles("*.json");
+                    foreach (FileInfo f in medsFI)
+                    {
+                        LogInfo("Loading " + sFolderName + " tierReward: " + f.Name);
+                        try
+                        {
+                            TierRewardData medsTRD = ToData(JsonUtility.FromJson<TierRewardDataText>(File.ReadAllText(f.ToString())));
+                            medsTierRewardDataSource[medsTRD.TierNum] = UnityEngine.Object.Instantiate<TierRewardData>(medsTRD);
+                            customCount++;
+                        }
+                        catch (Exception e) { LogError("Error loading custom " + sFolderName + " tierReward " + f.Name + ": " + e.Message); }
+                    }
+                    Traverse.Create(Globals.Instance).Field("_TierRewardDataSource").SetValue(medsTierRewardDataSource);
+                    if (customCount > 0) { LogInfo("Loaded " + customCount + " tierRewards from " + sFolderName); };
+                }
+
+                // custom NPCs
+                if (Directory.Exists(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", sFolderName, "NPC")))
+                {
+                    customCount = 0;
+                    LogInfo("Loading NPCs from " + sFolderName);
+                    medsSecondRunImport = new();
+                    medsFI = (new DirectoryInfo(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", sFolderName, "NPC"))).GetFiles("*.json");
+                    foreach (FileInfo f in medsFI)
+                    {
+                        try
+                        {
+                            LogInfo("Loading " + sFolderName + " NPC: " + f.Name);
+                            NPCData medsNPC = ToData(JsonUtility.FromJson<NPCDataText>(File.ReadAllText(f.ToString())));
+                            medsNPCsSource[medsNPC.Id] = UnityEngine.Object.Instantiate<NPCData>(medsNPC);
+                            //LogDebug("NPC clone: " + key);
+                            sortedDictionary[medsNPC.Id] = medsNPCsSource[medsNPC.Id].NPCName;
+                            if (medsSecondRunImport.ContainsKey(medsNPC.Id))
+                            {
+                                medsNPCsSource[medsNPC.Id].BaseMonster = !medsSecondRunImport[medsNPC.Id][0].IsNullOrWhiteSpace() && medsNPCsSource.ContainsKey(medsSecondRunImport[medsNPC.Id][0]) ? medsNPCsSource[medsSecondRunImport[medsNPC.Id][0]] : (NPCData)null;
+                                medsNPCsSource[medsNPC.Id].HellModeMob = !medsSecondRunImport[medsNPC.Id][1].IsNullOrWhiteSpace() && medsNPCsSource.ContainsKey(medsSecondRunImport[medsNPC.Id][1]) ? medsNPCsSource[medsSecondRunImport[medsNPC.Id][1]] : (NPCData)null;
+                                medsNPCsSource[medsNPC.Id].NgPlusMob = !medsSecondRunImport[medsNPC.Id][2].IsNullOrWhiteSpace() && medsNPCsSource.ContainsKey(medsSecondRunImport[medsNPC.Id][2]) ? medsNPCsSource[medsSecondRunImport[medsNPC.Id][2]] : (NPCData)null;
+                                medsNPCsSource[medsNPC.Id].UpgradedMob = !medsSecondRunImport[medsNPC.Id][3].IsNullOrWhiteSpace() && medsNPCsSource.ContainsKey(medsSecondRunImport[medsNPC.Id][3]) ? medsNPCsSource[medsSecondRunImport[medsNPC.Id][3]] : (NPCData)null;
+                            }
+                            medsNPCs[medsNPC.Id] = UnityEngine.Object.Instantiate<NPCData>(medsNPCsSource[medsNPC.Id]);
+                            string text1 = Texts.Instance.GetText(medsNPC.Id + "_name", "monsters");
+                            if (text1 != "")
+                                medsNPCs[medsNPC.Id].NPCName = text1;
+                            if (medsNPCsSource[medsNPC.Id].IsNamed && medsNPCsSource[medsNPC.Id].Difficulty > -1)
+                            {
+                                medsNPCsNamed[medsNPC.Id] = UnityEngine.Object.Instantiate<NPCData>(medsNPCsSource[medsNPC.Id]);
+                                string text2 = Texts.Instance.GetText(medsNPC.Id + "_name", "monsters");
+                                if (text2 != "")
+                                    medsNPCsNamed[medsNPC.Id].NPCName = text2;
+                            }
+                            customCount++;
+                        }
+                        catch (Exception e) { LogError("Error loading custom " + sFolderName + " NPC " + f.Name + ": " + e.Message); }
+                    }
+                    Traverse.Create(Globals.Instance).Field("_NPCsSource").SetValue(medsNPCsSource);
+                    Traverse.Create(Globals.Instance).Field("_NPCs").SetValue(medsNPCs);
+                    Traverse.Create(Globals.Instance).Field("_NPCsNamed").SetValue(medsNPCsNamed);
+                    if (customCount > 0) { LogInfo("Loaded " + customCount + " NPCs from " + sFolderName); };
+                }
+
+                // second run through cards to connect items...
+                LogInfo("Loading custom card component for " + sFolderName + ": Item...");
+                foreach (string key in medsCardsNeedingItems.Keys)
+                {
+                    ItemData newItem = (ItemData)null;
+                    try
+                    {
+                        newItem = ToData(JsonUtility.FromJson<ItemDataText>(medsCardsNeedingItems[key]));
+                        LogDebug("Loading custom item: " + newItem.Id);
+                        medsItemDataSource[newItem.Id] = UnityEngine.Object.Instantiate<ItemData>(newItem);
+                        medsCardsSource[key].Item = medsItemDataSource[newItem.Id];
+                    }
+                    catch (Exception e) { LogError("Error loading custom " + sFolderName + " card item " + key + ": " + e.Message); }
+                }
+                LogInfo("Loading custom card component for " + sFolderName + ": ItemEnchantment...");
+                foreach (string key in medsCardsNeedingItemEnchants.Keys)
+                {
+                    ItemData newItem = (ItemData)null;
+                    try
+                    {
+                        newItem = ToData(JsonUtility.FromJson<ItemDataText>(medsCardsNeedingItemEnchants[key]));
+                        LogDebug("Loading custom enchantment: " + newItem.Id);
+                        medsItemDataSource[newItem.Id] = UnityEngine.Object.Instantiate<ItemData>(newItem);
+                        medsCardsSource[key].ItemEnchantment = medsItemDataSource[newItem.Id];
+                    }
+                    catch (Exception e) { LogError("Error loading custom " + sFolderName + " card enchantment " + key + ": " + e.Message); }
+                }
+                Traverse.Create(Globals.Instance).Field("_ItemDataSource").SetValue(medsItemDataSource);
+
+                // custom traits
+                if (Directory.Exists(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", sFolderName, "trait")))
+                {
+                    customCount = 0;
+                    LogInfo("Loading traits from " + sFolderName);
+                    medsFI = (new DirectoryInfo(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", sFolderName, "trait"))).GetFiles("*.json");
+                    foreach (FileInfo f in medsFI)
+                    {
+                        try
+                        {
+                            LogInfo("Loading " + sFolderName + " trait: " + f.Name);
+                            TraitData medsTrait = ToData(JsonUtility.FromJson<TraitDataText>(File.ReadAllText(f.ToString())));
+                            medsTraitsSource[medsTrait.Id] = UnityEngine.Object.Instantiate<TraitData>(medsTrait);
+                            medsTraitsCopy[medsTrait.Id] = UnityEngine.Object.Instantiate<TraitData>(medsTraitsSource[medsTrait.Id]);
+                            if (!(medsCustomTraitsSource.Contains(medsTrait.Id)))
+                                medsCustomTraitsSource.Add(medsTrait.Id);
+                            customCount++;
+                        }
+                        catch (Exception e) { LogError("Error loading custom " + sFolderName + " trait " + f.Name + ": " + e.Message); }
+                    }
+                    Traverse.Create(Globals.Instance).Field("_TraitsSource").SetValue(medsTraitsSource);
+                    Traverse.Create(Globals.Instance).Field("_Traits").SetValue(medsTraitsCopy);
+                    if (customCount > 0) { LogInfo("Loaded " + customCount + " traits from " + sFolderName); };
+                }
+
+                // custom perks
+                if (Directory.Exists(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", sFolderName, "perk")))
+                {
+                    customCount = 0;
+                    LogInfo("Loading perks from " + sFolderName);
+                    medsFI = (new DirectoryInfo(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", sFolderName, "perk"))).GetFiles("*.json");
+                    foreach (FileInfo f in medsFI)
+                    {
+                        try
+                        {
+                            LogInfo("Loading " + sFolderName + " perk: " + f.Name);
+                            PerkData medsPerk = ToData(JsonUtility.FromJson<PerkDataText>(File.ReadAllText(f.ToString())));
+                            medsPerksSource[medsPerk.Id] = UnityEngine.Object.Instantiate<PerkData>(medsPerk);
+                            customCount++;
+                        }
+                        catch (Exception e) { LogError("Error loading custom " + sFolderName + " perk " + f.Name + ": " + e.Message); }
+                    }
+                    Traverse.Create(Globals.Instance).Field("_PerksSource").SetValue(medsPerksSource);
+                    if (customCount > 0) { LogInfo("Loaded " + customCount + " perks from " + sFolderName); };
+                }
+
+                // custom packs
+                if (Directory.Exists(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", sFolderName, "pack")))
+                {
+                    customCount = 0;
+                    LogInfo("Loading packs from " + sFolderName);
+                    medsSecondRunImport2 = new();
+                    medsFI = (new DirectoryInfo(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", sFolderName, "pack"))).GetFiles("*.json");
+                    foreach (FileInfo f in medsFI)
+                    {
+                        try
+                        {
+                            LogInfo("Loading " + sFolderName + " pack: " + f.Name);
+                            PackData medsPack = ToData(JsonUtility.FromJson<PackDataText>(File.ReadAllText(f.ToString())));
+                            medsPackDataSource[medsPack.PackId] = UnityEngine.Object.Instantiate<PackData>(medsPack);
+                            customCount++;
+                        }
+                        catch (Exception e) { LogError("Error loading custom " + sFolderName + " pack " + f.Name + ": " + e.Message); }
+                    }
+                    Traverse.Create(Globals.Instance).Field("_PackDataSource").SetValue(medsPackDataSource);
+                    if (customCount > 0) { LogInfo("Loaded " + customCount + " packs from " + sFolderName); };
+                }
+
+                // custom subclasses
+                if (Directory.Exists(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", sFolderName, "subclass")))
+                {
+                    customCount = 0;
+                    LogInfo("Loading subclasses from " + sFolderName);
+                    medsFI = (new DirectoryInfo(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", sFolderName, "subclass"))).GetFiles("*.json");
+                    foreach (FileInfo f in medsFI)
+                    {
+                        try
+                        {
+                            LogInfo("Loading " + sFolderName + " subclass: " + f.Name);
+                            SubClassData medsSubClass = ToData(JsonUtility.FromJson<SubClassDataText>(File.ReadAllText(f.ToString())));
+                            medsSubClassesSource[medsSubClass.Id] = UnityEngine.Object.Instantiate<SubClassData>(medsSubClass);
+                            medsSubClassCopy[medsSubClass.Id] = UnityEngine.Object.Instantiate<SubClassData>(medsSubClassesSource[medsSubClass.Id]);
+                            if (medsSubClassCopy[medsSubClass.Id].CharacterName.Length < 2)
+                                medsSubClassCopy[medsSubClass.Id].CharacterName = Texts.Instance.GetText(medsSubClass.Id + "_name", "class");
+                            if (medsSubClassCopy[medsSubClass.Id].CharacterDescription.Length < 2)
+                                medsSubClassCopy[medsSubClass.Id].CharacterDescription = Texts.Instance.GetText(medsSubClass.Id + "_description", "class");
+                            if (medsSubClassCopy[medsSubClass.Id].CharacterDescriptionStrength.Length < 2)
+                                medsSubClassCopy[medsSubClass.Id].CharacterDescriptionStrength = Texts.Instance.GetText(medsSubClass.Id + "_strength", "class");
+                            customCount++;
+                        }
+                        catch (Exception e) { LogError("Error loading custom " + sFolderName + " subclass " + f.Name + ": " + e.Message); }
+                    }
+                    Traverse.Create(Globals.Instance).Field("_SubClassSource").SetValue(medsSubClassesSource);
+                    Traverse.Create(Globals.Instance).Field("_SubClass").SetValue(medsSubClassCopy);
+                    if (customCount > 0) { LogInfo("Loaded " + customCount + " subclasses from " + sFolderName); };
+
+                    // connect obelisk challenge packs to subclasses
+                    LogDebug("pack-subclass binding commenced...");
+                    foreach (string packID in medsSecondRunImport2.Keys)
+                    {
+                        string subclassID = medsSecondRunImport2[packID].ToLower().Trim();
+                        if (medsSubClassesSource.ContainsKey(subclassID) && medsPackDataSource.ContainsKey(packID))
+                            medsPackDataSource[packID].RequiredClass = medsSubClassesSource[subclassID];
+                    }
+                    Traverse.Create(Globals.Instance).Field("_PackDataSource").SetValue(medsPackDataSource);
+                }
+
+                // custom skins
+                if (Directory.Exists(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", sFolderName, "skin")))
+                {
+                    customCount = 0;
+                    LogInfo("Loading skins from " + sFolderName);
+                    medsFI = (new DirectoryInfo(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", sFolderName, "skin"))).GetFiles("*.json");
+                    foreach (FileInfo f in medsFI)
+                    {
+                        try
+                        {
+                            LogInfo("Loading " + sFolderName + " skin: " + f.Name);
+                            SkinData medsSkin = ToData(JsonUtility.FromJson<SkinDataText>(File.ReadAllText(f.ToString())));
+                            medsSkinsSource[medsSkin.SkinId.ToLower()] = UnityEngine.Object.Instantiate<SkinData>(medsSkin);
+                            customCount++;
+                        }
+                        catch (Exception e) { LogError("Error loading custom " + sFolderName + " skin " + f.Name + ": " + e.Message); }
+                    }
+                    Traverse.Create(Globals.Instance).Field("_SkinDataSource").SetValue(medsSkinsSource);
+                    if (customCount > 0) { LogInfo("Loaded " + customCount + " skins from " + sFolderName); };
+                }
+
+
+                // custom cardbacks
+                if (Directory.Exists(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", sFolderName, "cardback")))
+                {
+                    customCount = 0;
+                    LogInfo("Loading cardbacks from " + sFolderName);
+                    medsFI = (new DirectoryInfo(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", sFolderName, "cardback"))).GetFiles("*.json");
+                    foreach (FileInfo f in medsFI)
+                    {
+                        try
+                        {
+                            LogInfo("Loading " + sFolderName + " cardback: " + f.Name);
+                            CardbackData medsCardback = ToData(JsonUtility.FromJson<CardbackDataText>(File.ReadAllText(f.ToString())));
+                            medsCardbacksSource[medsCardback.CardbackId.ToLower()] = UnityEngine.Object.Instantiate<CardbackData>(medsCardback);
+                            customCount++;
+                        }
+                        catch (Exception e) { LogError("Error loading custom " + sFolderName + " cardback " + f.Name + ": " + e.Message); }
+                    }
+                    Traverse.Create(Globals.Instance).Field("_CardbackDataSource").SetValue(medsCardbacksSource);
+                    if (customCount > 0) { LogInfo("Loaded " + customCount + " cardbacks from " + sFolderName); };
+                }
+
+
+                // custom perkNodes
+                if (Directory.Exists(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", sFolderName, "perkNode")))
+                {
+                    medsSecondRunImport = new();
+                    medsSecondRunImport2 = new();
+                    customCount = 0;
+                    LogInfo("Loading perkNodes from " + sFolderName);
+                    medsFI = (new DirectoryInfo(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", sFolderName, "perkNode"))).GetFiles("*.json");
+                    foreach (FileInfo f in medsFI)
+                    {
+                        try
+                        {
+                            LogInfo("Loading " + sFolderName + " perkNode: " + f.Name);
+                            PerkNodeData medsPN = ToData(JsonUtility.FromJson<PerkNodeDataText>(File.ReadAllText(f.ToString())));
+                            medsPerksNodesSource[medsPN.Id] = UnityEngine.Object.Instantiate<PerkNodeData>(medsPN);
+                            customCount++;
+                        }
+                        catch (Exception e) { LogError("Error loading custom " + sFolderName + " perkNode " + f.Name + ": " + e.Message); }
+                    }
+                    // late binding of perknodes
+                    foreach (string key in medsPerksNodesSource.Keys)
+                    {
+                        try
+                        {
+                            if (medsSecondRunImport.ContainsKey(key))
+                            {
+                                medsPerksNodesSource[key].PerksConnected = new PerkNodeData[medsSecondRunImport[key].Length];
+                                for (int a = 0; a < medsSecondRunImport[key].Length; a++)
+                                    medsPerksNodesSource[key].PerksConnected[a] = medsPerksNodesSource.ContainsKey(medsSecondRunImport[key][a]) ? medsPerksNodesSource[medsSecondRunImport[key][a]] : (PerkNodeData)null;
+                            }
+                            if (medsSecondRunImport2.ContainsKey(key))
+                                medsPerksNodesSource[key].PerkRequired = medsPerksNodesSource.ContainsKey(medsSecondRunImport2[key]) ? medsPerksNodesSource[medsSecondRunImport2[key]] : (PerkNodeData)null;
+                        }
+                        catch (Exception e) { LogError("Error performing late binding of " + sFolderName + " perknodes: " + e.Message); }
+                    }
+                    Traverse.Create(Globals.Instance).Field("_PerksNodesSource").SetValue(medsPerksNodesSource);
+                    if (customCount > 0) { LogInfo("Loaded " + customCount + " perkNodes from " + sFolderName); };
+                }
+
+                // custom eventRequirements
+                if (Directory.Exists(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", sFolderName, "eventRequirement")))
+                {
+                    customCount = 0;
+                    LogInfo("Loading eventRequirements from " + sFolderName);
+                    medsFI = (new DirectoryInfo(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", sFolderName, "eventRequirement"))).GetFiles("*.json");
+                    foreach (FileInfo f in medsFI)
+                    {
+                        try
+                        {
+                            LogInfo("Loading " + sFolderName + " eventRequirement: " + f.Name);
+                            EventRequirementData medsERD = ToData(JsonUtility.FromJson<EventRequirementDataText>(File.ReadAllText(f.ToString())));
+                            medsEventRequirementDataSource[medsERD.RequirementId] = UnityEngine.Object.Instantiate<EventRequirementData>(medsERD);
+                            customCount++;
+                        }
+                        catch (Exception e) { LogError("Error loading custom " + sFolderName + " eventRequirement " + f.Name + ": " + e.Message); }
+                    }
+                    Traverse.Create(Globals.Instance).Field("_Requirements").SetValue(medsEventRequirementDataSource);
+                    if (customCount > 0) { LogInfo("Loaded " + customCount + " eventRequirements from " + sFolderName); };
+                }
+
+                // custom pairPacks
+                if (Directory.Exists(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", sFolderName, "pairsPack")))
+                {
+                    customCount = 0;
+                    LogInfo("Loading pairsPacks from " + sFolderName);
+                    medsFI = (new DirectoryInfo(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", sFolderName, "pairsPack"))).GetFiles("*.json");
+                    foreach (FileInfo f in medsFI)
+                    {
+                        try
+                        {
+                            LogInfo("Loading " + sFolderName + " pairsPack: " + f.Name);
+                            CardPlayerPairsPackData medsCPP = ToData(JsonUtility.FromJson<CardPlayerPairsPackDataText>(File.ReadAllText(f.ToString())));
+                            medsCardPlayerPairsPackDataSource[medsCPP.PackId] = UnityEngine.Object.Instantiate<CardPlayerPairsPackData>(medsCPP);
+                            customCount++;
+                        }
+                        catch (Exception e) { LogError("Error loading custom " + sFolderName + " pairsPack " + f.Name + ": " + e.Message); }
+                    }
+                    Traverse.Create(Globals.Instance).Field("_CardPlayerPairsPackDataSource").SetValue(medsCardPlayerPairsPackDataSource);
+                    if (customCount > 0) { LogInfo("Loaded " + customCount + " pairsPacks from " + sFolderName); };
+                }
+
+                // custom corruptionPacks
+                if (Directory.Exists(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", sFolderName, "corruptionPack")))
+                {
+                    customCount = 0;
+                    LogInfo("Loading corruptionPacks from " + sFolderName);
+                    medsFI = (new DirectoryInfo(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", sFolderName, "corruptionPack"))).GetFiles("*.json");
+                    foreach (FileInfo f in medsFI)
+                    {
+                        try
+                        {
+                            LogInfo("Loading " + sFolderName + " corruptionPack: " + f.Name);
+                            CorruptionPackData medsCPD = ToData(JsonUtility.FromJson<CorruptionPackDataText>(File.ReadAllText(f.ToString())));
+                            medsCorruptionPackDataSource[medsCPD.PackName] = UnityEngine.Object.Instantiate<CorruptionPackData>(medsCPD);
+                            customCount++;
+                        }
+                        catch (Exception e) { LogError("Error loading custom " + sFolderName + " corruptionPack " + f.Name + ": " + e.Message); }
+                    }
+                    Traverse.Create(Globals.Instance).Field("_CorruptionPackDataSource").SetValue(medsCorruptionPackDataSource);
+                    if (customCount > 0) { LogInfo("Loaded " + customCount + " corruptionPacks from " + sFolderName); };
+                }
+
+                // custom cardPlayerPacks
+                if (Directory.Exists(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", sFolderName, "cardPlayerPack")))
+                {
+                    customCount = 0;
+                    LogInfo("Loading cardPlayerPacks from " + sFolderName);
+                    medsFI = (new DirectoryInfo(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", sFolderName, "cardPlayerPack"))).GetFiles("*.json");
+                    foreach (FileInfo f in medsFI)
+                    {
+                        try
+                        {
+                            LogInfo("Loading " + sFolderName + " cardPlayerPack: " + f.Name);
+                            CardPlayerPackData medsCPP = ToData(JsonUtility.FromJson<CardPlayerPackDataText>(File.ReadAllText(f.ToString())));
+                            medsCardPlayerPackDataSource[medsCPP.PackId] = UnityEngine.Object.Instantiate<CardPlayerPackData>(medsCPP);
+                            customCount++;
+                        }
+                        catch (Exception e) { LogError("Error loading custom " + sFolderName + " cardPlayerPack " + f.Name + ": " + e.Message); }
+                    }
+                    Traverse.Create(Globals.Instance).Field("_CardPlayerPackDataSource").SetValue(medsCardPlayerPackDataSource);
+                    if (customCount > 0) { LogInfo("Loaded " + customCount + " cardPlayerPacks from " + sFolderName); };
+                }
+
+                // custom cinematics
+                if (Directory.Exists(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", sFolderName, "cinematic")))
+                {
+                    customCount = 0;
+                    LogInfo("Loading cinematic from " + sFolderName);
+                    medsFI = (new DirectoryInfo(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", sFolderName, "cinematic"))).GetFiles("*.json");
+                    foreach (FileInfo f in medsFI)
+                    {
+                        try
+                        {
+                            LogInfo("Loading " + sFolderName + " cinematic: " + f.Name);
+                            CinematicData medsCinematic = ToData(JsonUtility.FromJson<CinematicDataText>(File.ReadAllText(f.ToString())));
+                            medsCinematicDataSource[medsCinematic.CinematicId.ToLower()] = UnityEngine.Object.Instantiate<CinematicData>(medsCinematic);
+                            customCount++;
+                        }
+                        catch (Exception e) { LogError("Error loading custom " + sFolderName + " cinematic " + f.Name + ": " + e.Message); }
+                    }
+                    Traverse.Create(Globals.Instance).Field("_Cinematics").SetValue(medsCinematicDataSource);
+                    if (customCount > 0) { LogInfo("Loaded " + customCount + " cinematics from " + sFolderName); };
+                }
+
+                // custom combatData
+                if (Directory.Exists(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", sFolderName, "combatData")))
+                {
+                    customCount = 0;
+                    LogInfo("Loading combatData from " + sFolderName);
+                    medsFI = (new DirectoryInfo(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", sFolderName, "combatData"))).GetFiles("*.json");
+                    foreach (FileInfo f in medsFI)
+                    {
+                        try
+                        {
+                            LogInfo("Loading " + sFolderName + " combat: " + f.Name);
+                            CombatData medsCombat = ToData(JsonUtility.FromJson<CombatDataText>(File.ReadAllText(f.ToString())));
+                            medsCombatDataSource[medsCombat.CombatId] = UnityEngine.Object.Instantiate<CombatData>(medsCombat);
+                            customCount++;
+                        }
+                        catch (Exception e) { LogError("Error loading custom " + sFolderName + " combat " + f.Name + ": " + e.Message); }
+                    }
+                    Traverse.Create(Globals.Instance).Field("_CombatDataSource").SetValue(medsCombatDataSource);
+                    if (customCount > 0) { LogInfo("Loaded " + customCount + " combatData from " + sFolderName); };
+                }
+
+                // custom loot
+                if (Directory.Exists(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", sFolderName, "loot")))
+                {
+                    customCount = 0;
+                    LogInfo("Loading loot from " + sFolderName);
+                    medsFI = (new DirectoryInfo(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", sFolderName, "loot"))).GetFiles("*.json");
+                    foreach (FileInfo f in medsFI)
+                    {
+                        try
+                        {
+                            LogInfo("Loading " + sFolderName + " loot: " + f.Name);
+                            LootData medsLoot = ToData(JsonUtility.FromJson<LootDataText>(File.ReadAllText(f.ToString())));
+                            medsLootDataSource[medsLoot.Id] = UnityEngine.Object.Instantiate<LootData>(medsLoot);
+                            customCount++;
+                        }
+                        catch (Exception e) { LogError("Error loading custom " + sFolderName + " loot " + f.Name + ": " + e.Message); }
+                    }
+                    Traverse.Create(Globals.Instance).Field("_LootDataSource").SetValue(medsLootDataSource);
+                    if (customCount > 0) { LogInfo("Loaded " + customCount + " loot from " + sFolderName); };
+                }
+
+                // custom zones
+                if (Directory.Exists(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", sFolderName, "zone")))
+                {
+                    customCount = 0;
+                    LogInfo("Loading zones from " + sFolderName);
+                    medsFI = (new DirectoryInfo(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", sFolderName, "zone"))).GetFiles("*.json");
+                    foreach (FileInfo f in medsFI)
+                    {
+                        try
+                        {
+                            LogInfo("Loading " + sFolderName + " zone: " + f.Name);
+                            ZoneData medsZone = ToData(JsonUtility.FromJson<ZoneDataText>(File.ReadAllText(f.ToString())));
+                            medsZoneDataSource[medsZone.ZoneId.ToLower()] = UnityEngine.Object.Instantiate<ZoneData>(medsZone);
+                            medsCustomZones[medsZone.ZoneId.ToLower()] = JsonUtility.FromJson<ZoneDataText>(File.ReadAllText(f.ToString()));
+                            customCount++;
+                        }
+                        catch (Exception e) { LogError("Error loading custom " + sFolderName + " zone " + f.Name + ": " + e.Message); }
+                    }
+                    Traverse.Create(Globals.Instance).Field("_ZoneDataSource").SetValue(medsZoneDataSource);
+                    if (customCount > 0) { LogInfo("Loaded " + customCount + " zones from " + sFolderName); };
+                }
+
+                // custom nodes
+                if (Directory.Exists(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", sFolderName, "node")))
+                {
+                    customCount = 0;
+                    LogInfo("Loading nodes from " + sFolderName);
+                    medsSecondRunImport = new();
+                    medsSecondRunImport2 = new();
+                    medsSecondRunNodesConnected = new();
+                    medsFI = (new DirectoryInfo(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", sFolderName, "node"))).GetFiles("*.json");
+                    foreach (FileInfo f in medsFI)
+                    {
+                        try
+                        {
+                            LogInfo("Loading " + sFolderName + " node: " + f.Name);
+                            NodeData medsNode = ToData(JsonUtility.FromJson<NodeDataText>(File.ReadAllText(f.ToString())));
+                            string lower = medsNode.NodeId.ToLower();
+                            medsNodeDataSource[lower] = UnityEngine.Object.Instantiate<NodeData>(medsNode);
+                            medsNodeDataSource[lower].name = lower;
+                            if (!medsNodesByZone.ContainsKey(medsNode.NodeZone.ZoneId.ToLower()))
+                                medsNodesByZone[medsNode.NodeZone.ZoneId.ToLower()] = new List<NodeDataText>();
+                            if (!medsNodesByZone[medsNode.NodeZone.ZoneId.ToLower()].Contains(JsonUtility.FromJson<NodeDataText>(File.ReadAllText(f.ToString()))))
+                                medsNodesByZone[medsNode.NodeZone.ZoneId.ToLower()].Add(JsonUtility.FromJson<NodeDataText>(File.ReadAllText(f.ToString())));
+                            customCount++;
+                        }
+                        catch (Exception e) { LogError("Error loading custom " + sFolderName + " node " + f.Name + ": " + e.Message); }
+                    }
+                    // late binding of nodesconnected
+                    LogDebug("Late binding of NodesConnected");
+                    foreach (KeyValuePair<string, string[]> kvp in medsSecondRunNodesConnected)
+                    {
+                        try
+                        {
+                            medsNodeDataSource[kvp.Key].NodesConnected = new NodeData[kvp.Value.Length];
+                            for (int a = 0; a < kvp.Value.Length; a++)
+                                medsNodeDataSource[kvp.Key].NodesConnected[a] = GetNode(kvp.Value[a]);
+                        }
+                        catch (Exception e) { LogError("Error performing late binding of " + sFolderName + " NodesConnected: " + e.Message); }
+                    }
+                    LogDebug("Late binding of NodesConnectedRequirement");
+                    // late binding of nodesconnectedrequirement
+                    foreach (KeyValuePair<string, string[]> kvp in medsSecondRunImport)
+                    {
+                        try
+                        {
+                            medsNodeDataSource[kvp.Key].NodesConnectedRequirement = new NodesConnectedRequirement[kvp.Value.Length];
+                            for (int a = 0; a < kvp.Value.Length; a++)
+                                medsNodeDataSource[kvp.Key].NodesConnectedRequirement[a] = ToData(JsonUtility.FromJson<NodesConnectedRequirementText>(kvp.Value[a]));
+                        }
+                        catch (Exception e) { LogError("Error performing late binding of " + sFolderName + " NodesConnectedRequirement: " + e.Message); }
+                    }
+                    Traverse.Create(Globals.Instance).Field("_NodeDataSource").SetValue(medsNodeDataSource);
+                    Traverse.Create(Globals.Instance).Field("_NodeCombatEventRelation").SetValue(medsNodeCombatEventRelation);
+                    if (customCount > 0) { LogInfo("Loaded " + customCount + " nodes from " + sFolderName); };
+                }
+
+                // custom events
+                if (Directory.Exists(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", sFolderName, "event")))
+                {
+                    customCount = 0;
+                    LogInfo("Loading events from " + sFolderName);
+                    medsSecondRunImport = new();
+                    medsNodeEvent = new();
+                    medsNodeEventPercent = new();
+                    medsNodeEventPriority = new();
+                    medsFI = (new DirectoryInfo(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", sFolderName, "event"))).GetFiles("*.json");
+                    foreach (FileInfo f in medsFI)
+                    {
+                        try
+                        {
+                            LogInfo("Loading " + sFolderName + " event: " + f.Name);
+                            EventData medsEvent = ToData(JsonUtility.FromJson<EventDataText>(File.ReadAllText(f.ToString())));
+                            medsEventDataSource[medsEvent.EventId] = UnityEngine.Object.Instantiate<EventData>(medsEvent);
+                            customCount++;
+                        }
+                        catch (Exception e) { LogError("Error loading custom " + sFolderName + " event " + f.Name + ": " + e.Message); }
+                    }
+                    Traverse.Create(Globals.Instance).Field("_Events").SetValue(medsEventDataSource);
+                    if (customCount > 0) { LogInfo("Loaded " + customCount + " events from " + sFolderName); };
+                }
+
+                // custom eventReplies
+                if (Directory.Exists(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", sFolderName, "eventReply")))
+                {
+                    customCount = 0;
+                    LogInfo("Loading eventReplies from " + sFolderName);
+                    medsFI = (new DirectoryInfo(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", sFolderName, "eventReply"))).GetFiles("*.json");
+                    foreach (FileInfo f in medsFI)
+                    {
+                        try
+                        {
+                            LogInfo("Loading " + sFolderName + " eventReply: " + f.Name);
+                            string medsERDTString = File.ReadAllText(f.ToString());
+                            EventReplyDataText medsERDT = JsonUtility.FromJson<EventReplyDataText>(medsERDTString);
+                            if (medsSecondRunImport.ContainsKey(medsERDT.medsEvent.ToLower()))
+                            {
+                                string[] tempReplies = medsSecondRunImport[medsERDT.medsEvent.ToLower()];
+                                Array.Resize(ref tempReplies, tempReplies.Length + 1);
+                                tempReplies[tempReplies.Length - 1] = medsERDTString;
+                                medsSecondRunImport[medsERDT.medsEvent.ToLower()] = tempReplies;
+                            }
+                            else
+                            {
+                                // #TODO: REWRITE THIS
+                                // incorporate it into the reply-event below? so it just expands existing event array there
+                                // rather than making a new one incorporating that one here, adding to it, then converting it BACK there?
+                                // xdd
+                                if (medsEventDataSource.ContainsKey(medsERDT.medsEvent.ToLower()))
+                                {
+                                    medsSecondRunImport[medsERDT.medsEvent.ToLower()] = new string[medsEventDataSource[medsERDT.medsEvent.ToLower()].Replys.Length + 1];
+                                    for (int a = 0; a < medsEventDataSource[medsERDT.medsEvent.ToLower()].Replys.Length; a++)
+                                        medsSecondRunImport[medsERDT.medsEvent.ToLower()][a] = JsonUtility.ToJson(ToText(medsEventDataSource[medsERDT.medsEvent.ToLower()].Replys[a]));
+                                    medsSecondRunImport[medsERDT.medsEvent.ToLower()][medsEventDataSource[medsERDT.medsEvent.ToLower()].Replys.Length] = medsERDTString;
+                                }
+                                else
+                                {
+                                    medsSecondRunImport[medsERDT.medsEvent.ToLower()] = new string[1] { medsERDTString };
+                                }
+                            }
+                            customCount++;
+                        }
+                        catch (Exception e) { LogError("Error loading custom " + sFolderName + " eventReplies " + f.Name + ": " + e.Message); }
+                    }
+
+                    LogDebug("late reply-event bindings");
+                    // late reply-event bindings
+                    foreach (string eID in medsSecondRunImport.Keys)
+                    {
+                        try
+                        {
+                            medsEventDataSource[eID].Replys = new EventReplyData[medsSecondRunImport[eID].Length];
+                            for (int a = 0; a < medsSecondRunImport[eID].Length; a++)
+                                medsEventDataSource[eID].Replys[a] = ToData(JsonUtility.FromJson<EventReplyDataText>(medsSecondRunImport[eID][a]), eID);
+                            medsEventDataSource[eID].Init();
+                        }
+                        catch (Exception e) { LogError("Error performing " + sFolderName + " reply-event bindings: " + e.Message); }
+                        //LogDebug("reply-event binding: " + eID);
+                    }
+
+                    // late combat-event bindings
+                    foreach (string cID in medsSecondRunCombatEvent.Keys)
+                    {
+                        try
+                        {
+                            medsCombatDataSource[cID].EventData = medsEventDataSource.ContainsKey(medsSecondRunCombatEvent[cID]) ? medsEventDataSource[medsSecondRunCombatEvent[cID]] : (EventData)null;
+                        }
+                        catch (Exception e) { LogError("Error performing " + sFolderName + " combat-event bindings: " + e.Message); }
+                    }
+                    Traverse.Create(Globals.Instance).Field("_NodeDataSource").SetValue(medsNodeDataSource);
+                    Traverse.Create(Globals.Instance).Field("_NodeCombatEventRelation").SetValue(medsNodeCombatEventRelation);
+                    Traverse.Create(Globals.Instance).Field("_CombatDataSource").SetValue(medsCombatDataSource);
+                    if (customCount > 0) { LogInfo("Loaded " + customCount + " eventReplies from " + sFolderName); };
+                }
+
+                // custom challengeTraits
+                if (Directory.Exists(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", sFolderName, "challengeTrait")))
+                {
+                    customCount = 0;
+                    LogInfo("Loading challengeTraits from " + sFolderName);
+                    medsFI = (new DirectoryInfo(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", sFolderName, "challengeTrait"))).GetFiles("*.json");
+                    foreach (FileInfo f in medsFI)
+                    {
+                        try
+                        {
+                            LogInfo("Loading " + sFolderName + " challengeTrait: " + f.Name);
+                            ChallengeTrait medsCT = ToData(JsonUtility.FromJson<ChallengeTraitText>(File.ReadAllText(f.ToString())));
+                            medsChallengeTraitsSource[medsCT.Id.ToLower()] = UnityEngine.Object.Instantiate<ChallengeTrait>(medsCT);
+                            customCount++;
+                        }
+                        catch (Exception e) { LogError("Error loading custom " + sFolderName + " challengeTrait " + f.Name + ": " + e.Message); }
+                    }
+                    Traverse.Create(Globals.Instance).Field("_ChallengeTraitsSource").SetValue(medsChallengeTraitsSource);
+                    if (customCount > 0) { LogInfo("Loaded " + customCount + " challengeTraits from " + sFolderName); };
+                }
+
+                // custom challengeData
+                if (Directory.Exists(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", sFolderName, "challengeData")))
+                {
+                    customCount = 0;
+                    LogInfo("Loading challengeData from " + sFolderName);
+                    medsFI = (new DirectoryInfo(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", sFolderName, "challengeData"))).GetFiles("*.json");
+                    foreach (FileInfo f in medsFI)
+                    {
+                        try
+                        {
+                            LogInfo("Loading " + sFolderName + " challengeData: " + f.Name);
+                            ChallengeData medsCD = ToData(JsonUtility.FromJson<ChallengeDataText>(File.ReadAllText(f.ToString())));
+                            medsChallengeDataSource[medsCD.Id.ToLower()] = UnityEngine.Object.Instantiate<ChallengeData>(medsCD);
+                            customCount++;
+                        }
+                        catch (Exception e) { LogError("Error loading custom " + sFolderName + " challengeData " + f.Name + ": " + e.Message); }
+                    }
+                    // save vanilla+custom
+                    Traverse.Create(Globals.Instance).Field("_WeeklyDataSource").SetValue(medsChallengeDataSource);
+                    if (customCount > 0) { LogInfo("Loaded " + customCount + " challengeData from " + sFolderName); };
+                }
+
+                // custom roadsTXT
+                if (Directory.Exists(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", sFolderName, "roadsTXT")))
+                {
+                    customCount = 0;
+                    LogInfo("Loading roads from " + sFolderName);
+                    medsFI = (new DirectoryInfo(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", sFolderName, "roadsTXT"))).GetFiles("*.txt");
+                    foreach (FileInfo f in medsFI)
+                    {
+                        LogInfo("Loading " + sFolderName + " road: " + f.Name);
+                        string[] fileText = File.ReadAllLines(f.ToString());
+                        foreach (string roadText in fileText)
+                        {
+                            if (roadText.Length > 2 && roadText[..2] == @"\\")
+                            {
+                                // comment - ignore
+                                continue;
+                            }
+                            string[] roadSplit = roadText.Replace(" ", "").Split("|");
+                            if (roadSplit.Length != 2)
+                            {
+                                LogError("malformed road data in file " + f.Name + ": " + roadText);
+                                continue;
+                            }
+                            if (!medsCustomRoads.ContainsKey(roadSplit[0].ToLower()))
+                                medsCustomRoads[roadSplit[0].ToLower()] = new List<Vector3>();
+                            foreach (string sVector in roadSplit[1].Split("),("))
+                            {
+                                if (sVector.Split(",").Length == 2)
+                                {
+                                    string sVector2 = sVector.Replace("(", "").Replace(")", "");
+                                    try
+                                    {
+                                        medsCustomRoads[roadSplit[0].ToLower()].Add(new Vector3(float.Parse(sVector2.Split(",")[0]), float.Parse(sVector2.Split(",")[1])));
+                                        customCount++;
+                                    }
+                                    catch (Exception e) { LogError("cannot parse floats in " + sFolderName + " road " + f.Name + " " + sVector2 + ": " + e.Message); }
+                                }
+                            }
+                        }
+                    }
+                    if (customCount > 0) { LogInfo("Loaded " + customCount + " roads from " + sFolderName); };
+                }
+
+                // custom prestige decks
+                if (Directory.Exists(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", sFolderName, "prestigeDeck")))
+                {
+                    customCount = 0;
+                    LogInfo("Loading prestige decks from " + sFolderName);
+                    medsFI = (new DirectoryInfo(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", sFolderName, "prestigeDeck"))).GetFiles("*.json");
+                    foreach (FileInfo f in medsFI)
+                    {
+                        try
+                        {
+                            LogInfo("Loading " + sFolderName + " prestige deck: " + f.Name);
+                            PrestigeDeck medsPD = JsonUtility.FromJson<PrestigeDeck>(File.ReadAllText(f.ToString()));
+                            medsPrestigeDecks[medsPD.ID.ToLower()] = medsPD;
+                            foreach (string cardID in medsPD.Cards)
+                            {
+                                Globals.Instance.IncludeInSearch(medsPD.Name, cardID);
+                                Globals.Instance.IncludeInSearch(medsPD.ID, cardID);
+                                CardData card = Globals.Instance.GetCardData(cardID, false);
+                                if (card != null)
+                                {
+                                    if (!card.UpgradesTo1.IsNullOrWhiteSpace())
+                                    {
+                                        Globals.Instance.IncludeInSearch(medsPD.Name, card.UpgradesTo1);
+                                        Globals.Instance.IncludeInSearch(medsPD.ID, card.UpgradesTo1);
+                                    }
+                                    if (!card.UpgradesTo2.IsNullOrWhiteSpace())
+                                    {
+                                        Globals.Instance.IncludeInSearch(medsPD.Name, card.UpgradesTo2);
+                                        Globals.Instance.IncludeInSearch(medsPD.ID, card.UpgradesTo2);
+                                    }
+                                    if ((UnityEngine.Object)card.UpgradesToRare != (UnityEngine.Object)null)
+                                    {
+                                        Globals.Instance.IncludeInSearch(medsPD.Name, card.UpgradesToRare.Id);
+                                        Globals.Instance.IncludeInSearch(medsPD.ID, card.UpgradesToRare.Id);
+                                    }
+                                }
+                            }
+                            customCount++;
+                        }
+                        catch (Exception e) { LogError("Error loading custom " + sFolderName + " prestige deck " + f.Name + ": " + e.Message); }
+                    }
+                    if (customCount > 0) { LogInfo("Loaded " + customCount + " prestige decks from " + sFolderName); };
+                }
+                LogInfo("Finished loading " + sFolderName);
+            }
+
+
+            // do a final (?) run to link NPCs to the SummonUnit property of cards...
+            LogInfo("Loading custom card component: SummonUnit...");
+            foreach (string key in medsCardsNeedingSummonUnits.Keys)
+            {
+                try
+                {
+                    medsCardsSource[key].SummonUnit = Globals.Instance.GetNPC(medsCardsNeedingSummonUnits[key]);
+                }
+                catch (Exception e) { LogError("Error loading SummonUnit: " + e.Message); }
+            }
+            Traverse.Create(Globals.Instance).Field("_CardsSource").SetValue(medsCardsSource);
+            // ExtendedEnchantments
+            foreach (string cID in medsCardsSource.Keys)
+            {
+                try
+                {
+                    CardData _card = medsCardsSource[cID];
+                    if ((UnityEngine.Object)_card.Item != (UnityEngine.Object)null || (UnityEngine.Object)_card.ItemEnchantment != (UnityEngine.Object)null)
+                    {
+                        if ((UnityEngine.Object)_card.SummonUnit != (UnityEngine.Object)null || _card.SelfKillHiddenSeconds > 0.0f)
+                        {
+                            medsExtendedEnchantments[cID] = UnityEngine.Object.Instantiate<CardData>(_card);
+                            _card.SummonUnit = (NPCData)null;
+                            _card.SummonUnitNum = 0;
+                            _card.SelfKillHiddenSeconds = 0.0f;
                         }
                     }
                 }
-                catch (Exception e) { LogError("Error loading custom eventReplies: " + e.Message); }
+                catch (Exception e) { LogError("Error loading ExtendedEnchantments: " + e.Message); }
             }
-
-            LogDebug("late reply-event bindings");
-            // late reply-event bindings
-            foreach (string eID in medsSecondRunImport.Keys)
-            {
-                try
-                {
-                    medsEventDataSource[eID].Replys = new EventReplyData[medsSecondRunImport[eID].Length];
-                    for (int a = 0; a < medsSecondRunImport[eID].Length; a++)
-                        medsEventDataSource[eID].Replys[a] = ToData(JsonUtility.FromJson<EventReplyDataText>(medsSecondRunImport[eID][a]), eID);
-                    medsEventDataSource[eID].Init();
-                }
-                catch (Exception e) { LogError("Error performing reply-event bindings: " + e.Message); }
-                //LogDebug("reply-event binding: " + eID);
-            }
-
-            // late combat-event bindings
-            foreach (string cID in medsSecondRunCombatEvent.Keys)
-            {
-                try
-                {
-                    medsCombatDataSource[cID].EventData = medsEventDataSource.ContainsKey(medsSecondRunCombatEvent[cID]) ? medsEventDataSource[medsSecondRunCombatEvent[cID]] : (EventData)null;
-                }
-                catch (Exception e) { LogError("Error performing combat-event bindings: " + e.Message); }
-            }
-            Traverse.Create(Globals.Instance).Field("_CombatDataSource").SetValue(medsCombatDataSource);
-
-
+            Traverse.Create(Globals.Instance).Field("_CardsSource").SetValue(medsCardsSource);
+            LogInfo("Loading card clones...");
+            medsCreateCardClones();
 
             LogDebug("late node-event bindings");
             // late node-event bindings
@@ -1726,6 +1914,7 @@ namespace Obeliskial_Content
                 {
                     string lower = nodeID.ToLower();
                     medsNodeDataSource[lower].NodeName = Texts.Instance.GetText(medsNodeDataSource[lower].NodeId + "_name", "nodes");
+                    medsNodeDataSource[lower].SourceNodeName = medsNodeDataSource[lower].NodeName; // #XMAS
                     medsNodeCombatEventRelation[lower] = lower;
                     for (int index4 = 0; index4 < medsNodeDataSource[nodeID].NodeCombat.Length; ++index4)
                         if ((UnityEngine.Object)medsNodeDataSource[nodeID].NodeCombat[index4] != (UnityEngine.Object)null)
@@ -1765,192 +1954,10 @@ namespace Obeliskial_Content
             // save vanilla+custom nodes (again)
             Traverse.Create(Globals.Instance).Field("_NodeDataSource").SetValue(medsNodeDataSource);
             Traverse.Create(Globals.Instance).Field("_NodeCombatEventRelation").SetValue(medsNodeCombatEventRelation);
-            LogInfo("Node data loaded!");
             // save vanilla+custom cinematics (again)
             Traverse.Create(Globals.Instance).Field("_Cinematics").SetValue(medsCinematicDataSource);
-            LogInfo("Cinematic data loaded!");
+            LogInfo("All custom content loaded! (we hope)");
 
-            /*
-             *      ,ad8888ba,   88        88         db         88           88                      888888888888  88888888ba          db         88  888888888888  ad88888ba   
-             *     d8"'    `"8b  88        88        d88b        88           88                           88       88      "8b        d88b        88       88      d8"     "8b  
-             *    d8'            88        88       d8'`8b       88           88                           88       88      ,8P       d8'`8b       88       88      Y8,          
-             *    88             88aaaaaaaa88      d8'  `8b      88           88                           88       88aaaaaa8P'      d8'  `8b      88       88      `Y8aaaaa,    
-             *    88             88""""""""88     d8YaaaaY8b     88           88                           88       88""""88'       d8YaaaaY8b     88       88        `"""""8b,  
-             *    Y8,            88        88    d8""""""""8b    88           88                           88       88    `8b      d8""""""""8b    88       88              `8b  
-             *     Y8a.    .a8P  88        88   d8'        `8b   88           88           888             88       88     `8b    d8'        `8b   88       88      Y8a     a8P  
-             *      `"Y8888Y"'   88        88  d8'          `8b  88888888888  88888888888  888             88       88      `8b  d8'          `8b  88       88       "Y88888P"   
-             */
-            LogInfo("Loading challenge traits...");
-            // vanilla 
-            for (int index = 0; index < challengeTraitArray.Length; ++index)
-            {
-                try
-                {
-                    if (medsVanillaContentLog.Value) { LogDebug("Loading vanilla challengeTrait: " + challengeTraitArray[index].Id); };
-                    medsChallengeTraitsSource[challengeTraitArray[index].Id.ToLower()] = UnityEngine.Object.Instantiate<ChallengeTrait>(challengeTraitArray[index]);
-                }
-                catch (Exception e) { LogError("Error loading vanilla challengeTrait: " + e.Message); }
-            }
-            // custom
-            medsFI = (new DirectoryInfo(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", "challengeTrait"))).GetFiles("*.json");
-            foreach (FileInfo f in medsFI)
-            {
-                try
-                {
-                    LogDebug("Loading custom challengeTrait: " + f.Name);
-                    ChallengeTrait medsCT = ToData(JsonUtility.FromJson<ChallengeTraitText>(File.ReadAllText(f.ToString())));
-                    medsChallengeTraitsSource[medsCT.Id.ToLower()] = UnityEngine.Object.Instantiate<ChallengeTrait>(medsCT);
-                }
-                catch (Exception e) { LogError("Error loading custom challengeTrait: " + e.Message); }
-            }
-            // save vanilla+custom
-            Traverse.Create(Globals.Instance).Field("_ChallengeTraitsSource").SetValue(medsChallengeTraitsSource);
-            LogInfo("Challenge traits loaded!");
-
-            /*
-             *      ,ad8888ba,   88        88         db         88           88                      88888888ba,         db    888888888888    db         
-             *     d8"'    `"8b  88        88        d88b        88           88                      88      `"8b       d88b        88        d88b        
-             *    d8'            88        88       d8'`8b       88           88                      88        `8b     d8'`8b       88       d8'`8b       
-             *    88             88aaaaaaaa88      d8'  `8b      88           88                      88         88    d8'  `8b      88      d8'  `8b      
-             *    88             88""""""""88     d8YaaaaY8b     88           88                      88         88   d8YaaaaY8b     88     d8YaaaaY8b     
-             *    Y8,            88        88    d8""""""""8b    88           88                      88         8P  d8""""""""8b    88    d8""""""""8b    
-             *     Y8a.    .a8P  88        88   d8'        `8b   88           88           888        88      .a8P  d8'        `8b   88   d8'        `8b   
-             *      `"Y8888Y"'   88        88  d8'          `8b  88888888888  88888888888  888        88888888Y"'  d8'          `8b  88  d8'          `8b  
-             */
-
-            LogInfo("Loading challenge data...");
-            // vanilla 
-            for (int index = 0; index < challengeDataArray.Length; ++index)
-            {
-                try
-                {
-                    if (medsVanillaContentLog.Value) { LogDebug("Loading vanilla challengeData: " + challengeDataArray[index].Id); };
-                    medsChallengeDataSource[challengeDataArray[index].Id.ToLower()] = UnityEngine.Object.Instantiate<ChallengeData>(challengeDataArray[index]);
-                }
-                catch (Exception e) { LogError("Error loading vanilla challengeData: " + e.Message); }
-            }
-            // custom
-            medsFI = (new DirectoryInfo(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", "challengeData"))).GetFiles("*.json");
-            foreach (FileInfo f in medsFI)
-            {
-                try
-                {
-                    LogDebug("Loading custom challengeData: " + f.Name);
-                    ChallengeData medsCD = ToData(JsonUtility.FromJson<ChallengeDataText>(File.ReadAllText(f.ToString())));
-                    medsChallengeDataSource[medsCD.Id.ToLower()] = UnityEngine.Object.Instantiate<ChallengeData>(medsCD);
-                }
-                catch (Exception e) { LogError("Error loading custom challengeData: " + e.Message); }
-            }
-            // save vanilla+custom
-            Traverse.Create(Globals.Instance).Field("_WeeklyDataSource").SetValue(medsChallengeDataSource);
-            LogInfo("Challenge data loaded!");
-
-            /*
-             *    88888888ba     ,ad8888ba,         db         88888888ba,     ad88888ba   
-             *    88      "8b   d8"'    `"8b       d88b        88      `"8b   d8"     "8b  
-             *    88      ,8P  d8'        `8b     d8'`8b       88        `8b  Y8,          
-             *    88aaaaaa8P'  88          88    d8'  `8b      88         88  `Y8aaaaa,    
-             *    88""""88'    88          88   d8YaaaaY8b     88         88    `"""""8b,  
-             *    88    `8b    Y8,        ,8P  d8""""""""8b    88         8P          `8b  
-             *    88     `8b    Y8a.    .a8P  d8'        `8b   88      .a8P   Y8a     a8P  
-             *    88      `8b    `"Y8888Y"'  d8'          `8b  88888888Y"'     "Y88888P"   
-             */
-
-            // custom roads
-            medsFI = (new DirectoryInfo(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", "roadsTXT"))).GetFiles("*.txt");
-            foreach (FileInfo f in medsFI)
-            {
-                LogDebug("Loading custom roads: " + f.Name);
-                string[] fileText = File.ReadAllLines(f.ToString());
-                foreach (string roadText in fileText)
-                {
-                    if (roadText.Length > 2 && roadText[..2] == @"\\")
-                    {
-                        // comment - ignore
-                        continue;
-                    }
-                    string[] roadSplit = roadText.Replace(" ", "").Split("|");
-                    if (roadSplit.Length != 2)
-                    {
-                        LogError("malformed road data in file " + f.Name + ": " + roadText);
-                        continue;
-                    }
-                    if (!medsCustomRoads.ContainsKey(roadSplit[0].ToLower()))
-                        medsCustomRoads[roadSplit[0].ToLower()] = new List<Vector3>();
-                    foreach (string sVector in roadSplit[1].Split("),("))
-                    {
-                        if (sVector.Split(",").Length == 2)
-                        {
-                            string sVector2 = sVector.Replace("(", "").Replace(")", "");
-                            try
-                            {
-                                medsCustomRoads[roadSplit[0].ToLower()].Add(new Vector3(float.Parse(sVector2.Split(",")[0]), float.Parse(sVector2.Split(",")[1])));
-                            } 
-                            catch
-                            {
-                                LogError("cannot parse floats: " + sVector2);
-                            }
-                        }
-                    }
-                }
-            }
-            /*
-             *    88888888ba                                               88                           88888888ba,                            88                    
-             *    88      "8b                                       ,d     ""                           88      `"8b                           88                    
-             *    88      ,8P                                       88                                  88        `8b                          88                    
-             *    88aaaaaa8P'  8b,dPPYba,   ,adPPYba,  ,adPPYba,  MM88MMM  88   ,adPPYb,d8   ,adPPYba,  88         88   ,adPPYba,   ,adPPYba,  88   ,d8   ,adPPYba,  
-             *    88""""""'    88P'   "Y8  a8P_____88  I8[    ""    88     88  a8"    `Y88  a8P_____88  88         88  a8P_____88  a8"     ""  88 ,a8"    I8[    ""  
-             *    88           88          8PP"""""""   `"Y8ba,     88     88  8b       88  8PP"""""""  88         8P  8PP"""""""  8b          8888[       `"Y8ba,   
-             *    88           88          "8b,   ,aa  aa    ]8I    88,    88  "8a,   ,d88  "8b,   ,aa  88      .a8P   "8b,   ,aa  "8a,   ,aa  88`"Yba,   aa    ]8I  
-             *    88           88           `"Ybbd8"'  `"YbbdP"'    "Y888  88   `"YbbdP"Y8   `"Ybbd8"'  88888888Y"'     `"Ybbd8"'   `"Ybbd8"'  88   `Y8a  `"YbbdP"'  
-             *                                                                  aa,    ,88                                                                           
-             *                                                                   "Y8bbdP"                                                                            
-             */
-            medsFI = (new DirectoryInfo(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", "prestigeDeck"))).GetFiles("*.json");
-            foreach (FileInfo f in medsFI)
-            {
-                try
-                {
-                    LogDebug("Loading prestige deck: " + f.Name);
-                    PrestigeDeck medsPD = JsonUtility.FromJson<PrestigeDeck>(File.ReadAllText(f.ToString()));
-                    medsPrestigeDecks[medsPD.ID.ToLower()] = medsPD;
-                    foreach (string cardID in medsPD.Cards)
-                    {
-                        Globals.Instance.IncludeInSearch(medsPD.Name, cardID);
-                        Globals.Instance.IncludeInSearch(medsPD.ID, cardID);
-                        CardData card = Globals.Instance.GetCardData(cardID, false);
-                        if (card != null)
-                        {
-                            if (!card.UpgradesTo1.IsNullOrWhiteSpace())
-                            {
-                                Globals.Instance.IncludeInSearch(medsPD.Name, card.UpgradesTo1);
-                                Globals.Instance.IncludeInSearch(medsPD.ID, card.UpgradesTo1);
-                            }
-                            if (!card.UpgradesTo2.IsNullOrWhiteSpace())
-                            {
-                                Globals.Instance.IncludeInSearch(medsPD.Name, card.UpgradesTo2);
-                                Globals.Instance.IncludeInSearch(medsPD.ID, card.UpgradesTo2);
-                            }
-                            if ((UnityEngine.Object)card.UpgradesToRare != (UnityEngine.Object)null)
-                            {
-                                Globals.Instance.IncludeInSearch(medsPD.Name, card.UpgradesToRare.Id);
-                                Globals.Instance.IncludeInSearch(medsPD.ID, card.UpgradesToRare.Id);
-                            }
-                        }
-                    }
-                }
-                catch (Exception e) { LogError("Error loading prestige deck: " + e.Message); }
-            }
-
-            // mod version info
-            medsFI = (new DirectoryInfo(Path.Combine(Paths.ConfigPath, "Obeliskial_importing", "!version"))).GetFiles("*.txt");
-            foreach (FileInfo f in medsFI)
-            {
-                LogDebug("Loading mod version data: " + f.Name);
-                string[] fileText = File.ReadAllLines(f.ToString());
-                if (fileText.Length > 2)
-                    medsModPackVersions.Add(new string[3] { fileText[0], fileText[1], fileText[2] });
-            }
         }
 
 
@@ -2064,7 +2071,7 @@ namespace Obeliskial_Content
             //LogDebug("FINAL RESULT : " + string.Join(Environment.NewLine, __result));
             return;
         }
-        public static string[] medsTraitList = { "charlspacemaker", "charlsdruidicduality", "charlslifeinsurance", "hanshekcrepuscular", "hanshekdarkdesigns", "hanshekvengeance", "hanshekunwillingsacrifice", "binkssharpshooter", "binksrangedspecialist", "binkssmoothoperator", "dgolemmagnuswelltrained", "randomalityzealotry", "tulataunting" };
+        public static string[] medsTraitList = { "charlspacemaker", "charlsdruidicduality", "charlslifeinsurance", "hanshekcrepuscular", "hanshekdarkdesigns", "hanshekvengeance", "hanshekunwillingsacrifice", "binkssharpshooter", "binksrangedspecialist", "binkssmoothoperator", "dgolemmagnuswelltrained", "randomalityzealotry", "tulataunting", "roycantor", "royheavenlychoir", "royaurareading", "roywordofgod", "roywordofwisdom" };
 
         public static void medsDoTrait(string _trait, ref Trait __instance)
         {
@@ -2158,8 +2165,7 @@ namespace Obeliskial_Content
                         cardData1.EnergyReductionTemporal += num2;
                         MatchManager.Instance.GetCardFromTableByIndex(cardData1.InternalId).ShowEnergyModification(-num2);
                         MatchManager.Instance.UpdateHandCards();
-                        MethodInfo textCharges = __instance.GetType().GetMethod("TextChargesLeft", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-                        _character.HeroItem.ScrollCombatText("Druidic Duality" + (string)textCharges.Invoke(__instance, new object[] { MatchManager.Instance.activatedTraits[_trait], traitData.TimesPerTurn }), Enums.CombatScrollEffectType.Trait);
+                        _character.HeroItem.ScrollCombatText("Druidic Duality" + TextChargesLeft(MatchManager.Instance.activatedTraits[_trait], traitData.TimesPerTurn), Enums.CombatScrollEffectType.Trait);
                         MatchManager.Instance.CreateLogCardModification(cardData1.InternalId, MatchManager.Instance.GetHero(_character.HeroIndex));
                         break;
                     }
@@ -2367,11 +2373,42 @@ namespace Obeliskial_Content
                 string[] _cards = Globals.Instance.CardListByType[Enums.CardType.Skill].ToArray();
                 UnityEngine.Random.InitState((AtOManager.Instance.currentMapNode + AtOManager.Instance.GetGameId() + _character.Id + MatchManager.Instance.GetCurrentRound().ToString()).GetDeterministicHashCode());
                 _card.AddCardList = new CardData[5];
-                _card.AddCardList[0] = Globals.Instance.GetCardData(_cards[UnityEngine.Random.Range(0, _cards.Count())]);
-                _card.AddCardList[1] = Globals.Instance.GetCardData(_cards[UnityEngine.Random.Range(0, _cards.Count())]);
-                _card.AddCardList[2] = Globals.Instance.GetCardData(_cards[UnityEngine.Random.Range(0, _cards.Count())]);
-                _card.AddCardList[3] = Globals.Instance.GetCardData(_cards[UnityEngine.Random.Range(0, _cards.Count())]);
-                _card.AddCardList[4] = Globals.Instance.GetCardData(_cards[UnityEngine.Random.Range(0, _cards.Count())]);
+                string cardToAdd = "";
+                for (int a = 0; a < 100; a++)
+                {
+                    cardToAdd = _cards[UnityEngine.Random.Range(0, _cards.Count())];
+                    if (Globals.Instance.GetCardData(cardToAdd, false).CardClass != Enums.CardClass.Monster)
+                        break;
+                }
+                _card.AddCardList[0] = Globals.Instance.GetCardData(cardToAdd);
+                for (int a = 0; a < 100; a++)
+                {
+                    cardToAdd = _cards[UnityEngine.Random.Range(0, _cards.Count())];
+                    if (Globals.Instance.GetCardData(cardToAdd, false).CardClass != Enums.CardClass.Monster)
+                        break;
+                }
+                _card.AddCardList[1] = Globals.Instance.GetCardData(cardToAdd);
+                for (int a = 0; a < 100; a++)
+                {
+                    cardToAdd = _cards[UnityEngine.Random.Range(0, _cards.Count())];
+                    if (Globals.Instance.GetCardData(cardToAdd, false).CardClass != Enums.CardClass.Monster)
+                        break;
+                }
+                _card.AddCardList[2] = Globals.Instance.GetCardData(cardToAdd);
+                for (int a = 0; a < 100; a++)
+                {
+                    cardToAdd = _cards[UnityEngine.Random.Range(0, _cards.Count())];
+                    if (Globals.Instance.GetCardData(cardToAdd, false).CardClass != Enums.CardClass.Monster)
+                        break;
+                }
+                _card.AddCardList[3] = Globals.Instance.GetCardData(cardToAdd);
+                for (int a = 0; a < 100; a++)
+                {
+                    cardToAdd = _cards[UnityEngine.Random.Range(0, _cards.Count())];
+                    if (Globals.Instance.GetCardData(cardToAdd, false).CardClass != Enums.CardClass.Monster)
+                        break;
+                }
+                _card.AddCardList[4] = Globals.Instance.GetCardData(cardToAdd);
                 MatchManager.Instance.GenerateNewCard(1, cardInDictionary1, false, Enums.CardPlace.Cast, heroIndex: _character.HeroIndex);
                 _character.HeroItem.ScrollCombatText("Smooth Operator", Enums.CombatScrollEffectType.Trait);
                 MatchManager.Instance.ItemTraitActivated();
@@ -2387,6 +2424,42 @@ namespace Obeliskial_Content
                     EffectsManager.Instance.PlayEffectAC("reinforce", true, _character.HeroItem.CharImageT, false);
                 }
                 return;
+            }
+            else if (_trait == "roycantor")
+            {
+
+            }
+            else if (_trait == "royheavenlychoir")
+            {
+
+            }
+            else if (_trait == "royaurareading")
+            {
+
+            }
+            else if (_trait == "roywordofgod")
+            {
+
+            }
+            else if (_trait == "roywordofwisdom")
+            {
+
+                for (int index = 0; index < teamHero.Length; ++index)
+                {
+                    if (teamHero[index] != null && (UnityEngine.Object)teamHero[index].HeroData != (UnityEngine.Object)null && teamHero[index].Alive)
+                    {
+                        teamHero[index].SetAuraTrait(_character, "courage", 1);
+                        teamHero[index].SetAuraTrait(_character, "reinforce", 1);
+                        teamHero[index].SetAuraTrait(_character, "insulate", 1);
+                        if ((UnityEngine.Object)teamHero[index].HeroItem != (UnityEngine.Object)null)
+                            EffectsManager.Instance.PlayEffectAC("shadowimpactdecay", true, teamHero[index].HeroItem.CharImageT, false);
+                    }
+                }
+                /*this.character.SetAuraTrait(this.character, "reinforce", 2);
+                if (!((Object)this.character.HeroItem != (Object)null))
+                    return;
+                this.character.HeroItem.ScrollCombatText(Texts.Instance.GetText("traits_Well Trained"), Enums.CombatScrollEffectType.Trait);
+                EffectsManager.Instance.PlayEffectAC("reinforce", true, this.character.HeroItem.CharImageT, false);*/
             }
         }
 
@@ -2421,12 +2494,6 @@ namespace Obeliskial_Content
                 return false;
             }
             return true;
-        }
-        public static string TextChargesLeft(int currentCharges, int chargesTotal)
-        {
-            int cCharges = currentCharges;
-            int cTotal = chargesTotal;
-            return "<br><color=#FFF>" + cCharges.ToString() + "/" + cTotal.ToString() + "</color>";
         }
 
         [HarmonyPrefix]
@@ -3722,6 +3789,7 @@ namespace Obeliskial_Content
                 __result.GainCharges = true;
                 __result.AuraDamageIncreasedPercentPerStack = 1.5f;
             }
+            //if (_characterTarget != null && _characterTarget.IsHero && _acId == "bless" && typ)
         }
 
         [HarmonyPrefix]

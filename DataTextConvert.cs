@@ -558,6 +558,7 @@ namespace Obeliskial_Content
             data.CharacterName = text.CharacterName;
             data.Energy = text.Energy;
             data.EnergyTurn = text.EnergyTurn;
+            data.ExpansionCharacter = text.ExpansionCharacter;
             data.Female = text.Female;
             data.FluffOffsetX = text.FluffOffsetX; // #CHARACTERSPRITES
             data.FluffOffsetY = text.FluffOffsetY; // #CHARACTERSPRITES
@@ -634,8 +635,8 @@ namespace Obeliskial_Content
             medsTexts[data.Id] = data.SubClassName;
             if (text.AutoUnlock)
                 medsAutoUnlockHeroes.Add(text.ID);
-            // data.InitialUnlock = text.AutoUnlock; // #XMAS
-            // data.SourceCharacterName = text.SourceCharacterName; // #XMAS
+            data.InitialUnlock = text.AutoUnlock; // #XMAS
+            data.SourceCharacterName = text.SourceCharacterName; // #XMAS
             return data;
         }
 
@@ -782,6 +783,7 @@ namespace Obeliskial_Content
             data.NodeZone = medsZoneDataSource.ContainsKey(text.NodeZone.ToLower()) ? medsZoneDataSource[text.NodeZone.ToLower()] : (ZoneData)null;
             data.TravelDestination = text.TravelDestination;
             data.VisibleIfNotRequirement = text.VisibleIfNotRequirement;
+            data.SourceNodeName = text.SourceNodeName; //#XMAS 
             return data;
         }
         public static NodesConnectedRequirement ToData(NodesConnectedRequirementText text)
@@ -806,6 +808,11 @@ namespace Obeliskial_Content
             for (int a = 0; a < text.LootItemTable.Length; a++)
                 data.LootItemTable[a] = ToData(JsonUtility.FromJson<LootItemText>(text.LootItemTable[a]));
             data.NumItems = text.NumItems;
+            data.ShadyModel = GetGO(text.ShadyModel); // #XMAS
+            data.ShadyScaleX = text.ShadyScaleX; // #XMAS
+            data.ShadyScaleY = text.ShadyScaleY; // #XMAS
+            data.ShadyOffsetX = text.ShadyOffsetX; // #XMAS
+            data.ShadyOffsetY = text.ShadyOffsetY; // #XMAS
             return data;
         }
         public static LootItem ToData(LootItemText text)
@@ -896,7 +903,7 @@ namespace Obeliskial_Content
                 data.NPCList[a] = medsNPCsSource.ContainsKey(text.NPCList[a]) ? medsNPCsSource[text.NPCList[a]] : (NPCData)null;
             data.NpcRemoveInMadness0Index = text.NPCRemoveInMadness0Index;
             data.ThermometerTierData = medsThermometerTierData.ContainsKey(text.ThermometerTierData) ? medsThermometerTierData[text.ThermometerTierData] : (ThermometerTierData)null;
-            // data.IsRift = text.IsRift; // #XMAS
+            data.IsRift = text.IsRift; // #XMAS
             return data;
         }
         public static CombatEffect ToData(CombatEffectText text)

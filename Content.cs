@@ -15,7 +15,7 @@ namespace Obeliskial_Content
     [BepInProcess("AcrossTheObelisk.exe")]
     public class Content : BaseUnityPlugin
     {
-        internal const int ModDate = 20231120;
+        internal const int ModDate = 20231206;
         private readonly Harmony harmony = new(PluginInfo.PLUGIN_GUID);
         internal static ManualLogSource Log;
         public static Dictionary<string, CardData> medsCardsSource = new();
@@ -84,12 +84,23 @@ namespace Obeliskial_Content
         public static string medsAwaitingKill = "";
         public static List<string> medsAutoUnlockHeroes = new();
         public static List<string[]> medsModPackVersions = new();
+        public static List<string> medsModFolderNames = new();
         public static ConfigEntry<bool> medsVanillaContentLog { get; private set; }
         private void Awake()
         {
             Log = Logger;
             medsVanillaContentLog = Config.Bind(new ConfigDefinition("Debug", "Vanilla Content Logging"), false, new ConfigDescription("Logs the loading of each individual piece of vanilla content."));
             LogInfo($"{PluginInfo.PLUGIN_GUID} {PluginInfo.PLUGIN_VERSION} has loaded!");
+            RegisterMod(
+                _name: PluginInfo.PLUGIN_NAME,
+                _author: "stiffmeds",
+                _description: "Enables custom content in Across the Obelisk.",
+                _version: PluginInfo.PLUGIN_VERSION,
+                _date: ModDate,
+                _link: @"https://across-the-obelisk.thunderstore.io/package/meds/Obeliskial_Content/",
+                _priority: 2000000000,
+                _type: new string[1] { "Core" }
+            );
             harmony.PatchAll();
         }
         internal static void LogDebug(string msg)
