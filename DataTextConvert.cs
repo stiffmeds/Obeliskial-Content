@@ -509,10 +509,10 @@ namespace Obeliskial_Content
 
         public static SubClassData ToData(SubClassDataText text)
         {
-            LogDebug("TEST 0");
+            //LogDebug("TEST 0");
             SubClassData data = UnityEngine.Object.Instantiate<SubClassData>(medsSubClassesSource["mercenary"]);
             //SubClassData data = ScriptableObject.CreateInstance<SubClassData>();
-            LogDebug("TEST 1");
+            //LogDebug("TEST 1");
             data.Id = text.ID;
             data.name = text.ID;
             data.ActionSound = GetAudio(text.ActionSound);
@@ -1526,7 +1526,7 @@ namespace Obeliskial_Content
         public static UnityEngine.Sprite GetSprite(string uncleanSpriteName, string type = "")
         {
             string spriteName = uncleanSpriteName.Trim().ToLower();
-            Log.LogDebug("getting sprite: " + spriteName);
+            //Log.LogDebug("getting sprite: " + spriteName);
             if (spriteName.Length == 0)
                 return (Sprite)null;
             //LogDebug(spriteName + ".1");
@@ -1559,8 +1559,8 @@ namespace Obeliskial_Content
         }
         public static UnityEngine.GameObject GetGO(string GOName)
         {
-            Log.LogDebug("GETGO: " + GOName);
-            return (GOName.Length > 0 && medsGOs.ContainsKey(GOName)) ? UnityEngine.Object.Instantiate<GameObject>(medsGOs[GOName], new Vector3(0f, 0f), Quaternion.identity, medsInvisibleGOHolder.transform) : (UnityEngine.GameObject)null;
+            //Log.LogDebug("GETGO: " + GOName);
+            return (GOName != null && GOName.Length > 0 && medsGOs.ContainsKey(GOName)) ? UnityEngine.Object.Instantiate<GameObject>(medsGOs[GOName], new Vector3(0f, 0f), Quaternion.identity, medsInvisibleGOHolder.transform) : (UnityEngine.GameObject)null;
             //return (GOName.Length > 0 && Plugin.medsGOs.ContainsKey(GOName)) ? Plugin.medsGOs[GOName] : (UnityEngine.GameObject)null;
         }
         public static EventRequirementData GetEventRequirement(string nameERD)

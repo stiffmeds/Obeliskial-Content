@@ -19,9 +19,9 @@ Enables custom content in Across the Obelisk.
 
 ## Creating Content
 
+Obeliskial Content loads any custom JSONs in the _Across the Obelisk\\BepInEx\\config\\Obeliskial\_importing\\TESTING\\_ folder.
 [Custom Card/Item Creator](https://code.secretsisters.gay/AtO_Custom)
-
-More content creation guides coming Soon™.
+[Work-in-progress how-to guides](https://code.secretsisters.gay/AtO_How_To)
 
 ## Support
 
