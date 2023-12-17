@@ -200,6 +200,8 @@ namespace Obeliskial_Content
             ChallengeData[] challengeDataArray = Resources.LoadAll<ChallengeData>("Challenge/Weeks");
             CardPlayerPairsPackData[] playerPairsPackDataArray = Resources.LoadAll<CardPlayerPairsPackData>("CardPlayerPairs");
 
+            Traverse.Create(Globals.Instance).Field("_CardsListSearch").SetValue(new Dictionary<string, List<string>>());
+
             // initialise vanilla vars? (why is this not in the declaration, do you think?)
             Globals.Instance.CardItemByType = new();
             Globals.Instance.CardEnergyCost = new();
@@ -1691,25 +1693,28 @@ namespace Obeliskial_Content
                         medsPrestigeDecks[medsPD.ID.ToLower()] = medsPD;
                         foreach (string cardID in medsPD.Cards)
                         {
-                            Globals.Instance.IncludeInSearch(medsPD.Name, cardID);
-                            Globals.Instance.IncludeInSearch(medsPD.ID, cardID);
-                            CardData card = Globals.Instance.GetCardData(cardID, false);
-                            if (card != null)
+                            medsIncludeInBaseSearch(medsPD.Name, cardID);
+                            medsIncludeInBaseSearch(medsPD.ID, cardID);
+                            if (medsCardsSource.ContainsKey(cardID))
                             {
-                                if (!card.UpgradesTo1.IsNullOrWhiteSpace())
+                                CardData card = medsCardsSource[cardID];
+                                if (card != null)
                                 {
-                                    Globals.Instance.IncludeInSearch(medsPD.Name, card.UpgradesTo1);
-                                    Globals.Instance.IncludeInSearch(medsPD.ID, card.UpgradesTo1);
-                                }
-                                if (!card.UpgradesTo2.IsNullOrWhiteSpace())
-                                {
-                                    Globals.Instance.IncludeInSearch(medsPD.Name, card.UpgradesTo2);
-                                    Globals.Instance.IncludeInSearch(medsPD.ID, card.UpgradesTo2);
-                                }
-                                if ((UnityEngine.Object)card.UpgradesToRare != (UnityEngine.Object)null)
-                                {
-                                    Globals.Instance.IncludeInSearch(medsPD.Name, card.UpgradesToRare.Id);
-                                    Globals.Instance.IncludeInSearch(medsPD.ID, card.UpgradesToRare.Id);
+                                    if (!card.UpgradesTo1.IsNullOrWhiteSpace())
+                                    {
+                                        medsIncludeInBaseSearch(medsPD.Name, card.UpgradesTo1);
+                                        medsIncludeInBaseSearch(medsPD.ID, card.UpgradesTo1);
+                                    }
+                                    if (!card.UpgradesTo2.IsNullOrWhiteSpace())
+                                    {
+                                        medsIncludeInBaseSearch(medsPD.Name, card.UpgradesTo2);
+                                        medsIncludeInBaseSearch(medsPD.ID, card.UpgradesTo2);
+                                    }
+                                    if ((UnityEngine.Object)card.UpgradesToRare != (UnityEngine.Object)null)
+                                    {
+                                        medsIncludeInBaseSearch(medsPD.Name, card.UpgradesToRare.Id);
+                                        medsIncludeInBaseSearch(medsPD.ID, card.UpgradesToRare.Id);
+                                    }
                                 }
                             }
                         }
