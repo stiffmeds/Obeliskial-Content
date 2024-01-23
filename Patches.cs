@@ -2526,6 +2526,269 @@ namespace Obeliskial_Content
             return false;
         }
 
+        [HarmonyPrefix]
+        [HarmonyPatch(typeof(MatchManager), "CheckTarget")]
+        public static bool CheckTargetPrefix(ref MatchManager __instance, ref bool __result, Transform transform = null, CardData cardToCheck = null, bool casterIsHero = true, bool _showDebug = false)
+        {
+            Transform targetTransform = Traverse.Create(__instance).Field("targetTransform").GetValue<Transform>();
+            CardData cardActive = Traverse.Create(__instance).Field("cardActive").GetValue<CardData>();
+            Hero theHero = Traverse.Create(__instance).Field("theHero").GetValue<Hero>();
+            NPC theNPC = Traverse.Create(__instance).Field("theNPC").GetValue<NPC>();
+            Hero[] teamHero = MatchManager.Instance.GetTeamHero();
+            NPC[] teamNPC = MatchManager.Instance.GetTeamNPC();
+            Transform medsTransform = transform;
+            CardData medsCardToCheck = cardToCheck;
+            bool medsCasterIsHero = casterIsHero;
+
+
+            if (medsTransform == null)
+                medsTransform = targetTransform;
+            if (medsTransform == null)
+                return false;
+            if (medsCardToCheck == null)
+                medsCardToCheck = cardActive;
+            if (medsCardToCheck == null)
+                return false;
+            if (_showDebug)
+                Debug.Log((object)("POST checktaregt -> " + medsTransform?.ToString() + "//" + medsCardToCheck?.ToString() + "//" + medsCasterIsHero.ToString()));
+            LogDebug("before EffectRequired check");
+            if (medsCardToCheck.EffectRequired != "")
+            {
+                if (medsCardToCheck.EffectRequired != "stealth")
+                {
+                    if (medsCardToCheck.EffectRequired == "stanzai")
+                    {
+                        if (theHero != null && !theHero.HasEffect("stanzai") && !theHero.HasEffect("stanzaii") && !theHero.HasEffect("stanzaiii"))
+                        {
+                            __result = false;
+                            return false;
+                        }
+                    }
+                    else if (medsCardToCheck.EffectRequired == "stanzaii")
+                    {
+                        if (theHero != null && !theHero.HasEffect("stanzaii") && !theHero.HasEffect("stanzaiii"))
+                        {
+                            __result = false;
+                            return false;
+                        }
+                    }
+                    else if (theHero != null && !theHero.HasEffect(medsCardToCheck.EffectRequired) || theNPC != null && !theNPC.HasEffect(medsCardToCheck.EffectRequired))
+                    {
+                        __result = false;
+                        return false;
+                    }
+                }
+                else if (theHero != null && !theHero.HasEffect("stealth") && !theHero.HasEffect("Stealthbonus") || theNPC != null && !theNPC.HasEffect("stealth") && !theNPC.HasEffect("Stealthbonus"))
+                {
+                    __result = false;
+                    return false;
+                }
+            }
+            bool flag1 = false;
+            bool flag2 = false;
+            bool flag3 = false;
+            bool flag4 = false;
+            bool flag5 = false;
+            Hero heroById = __instance.GetHeroById(transform.name);
+            NPC npcById = __instance.GetNPCById(transform.name);
+            if (medsCardToCheck.TargetType != Enums.CardTargetType.Global && (medsCasterIsHero && medsCardToCheck.EffectRepeatTarget != Enums.EffectRepeatTarget.Random && medsCardToCheck.TargetPosition != Enums.CardTargetPosition.Random || !medsCasterIsHero) && (medsCasterIsHero && npcById != null && npcById.HasEffect("stealth") || !medsCasterIsHero && heroById != null && heroById.HasEffect("stealth")))
+            {
+                __result = false;
+                return false;
+            }
+            LogDebug("before taunt/stealth check");
+            if (medsCardToCheck.TargetType != Enums.CardTargetType.Global && (medsCardToCheck.TargetSide == Enums.CardTargetSide.Enemy || medsCardToCheck.TargetSide == Enums.CardTargetSide.Anyone))
+            {
+                bool flag6 = false;
+                bool flag7 = false;
+                List<Hero> heroList = new();
+                List<NPC> npcList = new();
+                if (heroById != null && !medsCasterIsHero)
+                {
+                    for (int index = 0; index < teamHero.Length; ++index)
+                    {
+                        if (teamHero[index] != null)
+                        {
+                            Hero hero = teamHero[index];
+                            if (hero != null && hero.Alive && hero.HasEffect("taunt") && !hero.HasEffect("stealth"))
+                            {
+                                heroList.Add(hero);
+                                flag6 = true;
+                            }
+                        }
+                    }
+                    if (flag6 && !heroList.Contains(heroById))
+                    {
+                        __result = false;
+                        return false;
+                    }
+                }
+                else if (npcById != null & medsCasterIsHero)
+                {
+                    for (int index = 0; index < teamNPC.Length; ++index)
+                    {
+                        if (teamNPC[index] != null)
+                        {
+                            NPC npc = teamNPC[index];
+                            if (npc != null && npc.Alive && npc.HasEffect("taunt") && !npc.HasEffect("stealth"))
+                            {
+                                npcList.Add(npc);
+                                flag7 = true;
+                            }
+                        }
+                    }
+                    if (flag7 && !npcList.Contains(npcById))
+                    {
+                        __result = false;
+                        return false;
+                    }
+                }
+            }
+            LogDebug("before heroById check");
+            if (heroById != null)
+            {
+                flag1 = true;
+                if (__instance.PositionIsFront(true, heroById.Position))
+                    flag3 = true;
+                if (__instance.PositionIsBack((Character)heroById))
+                    flag4 = true;
+                if (theHero != null && medsTransform.name == theHero.Id)
+                    flag5 = true;
+            }
+            else if (npcById != null)
+            {
+                flag2 = true;
+                if (__instance.PositionIsFront(false, npcById.Position))
+                    flag3 = true;
+                if (__instance.PositionIsBack((Character)npcById))
+                    flag4 = true;
+                if (theNPC != null && medsTransform.name == theNPC.Id)
+                    flag5 = true;
+            }
+            LogDebug("before positioning check");
+            if (flag1 | flag2 && (medsCardToCheck.TargetPosition != Enums.CardTargetPosition.Front || flag3) && (medsCardToCheck.TargetPosition != Enums.CardTargetPosition.Back || flag4))
+            { // if hero/NPC found && (target not front OR this char is front) && (target not back OR this char is back)
+                if (medsCardToCheck.TargetSide == Enums.CardTargetSide.Self)
+                    __result = flag5;
+                LogDebug("before slowest check");
+                if (medsCardToCheck.TargetPosition == Enums.CardTargetPosition.Slowest)
+                {
+                    __result = true;
+                    if (flag1 && (((medsCardToCheck.TargetSide == Enums.CardTargetSide.Friend || (medsCardToCheck.TargetSide == Enums.CardTargetSide.FriendNotSelf && !flag5)) && medsCasterIsHero) || (medsCardToCheck.TargetSide == Enums.CardTargetSide.Enemy && !medsCasterIsHero)))
+                    { // heroes
+                        LogDebug("heroes");
+                        foreach (Hero _hero in teamHero)
+                        {
+                            if (_hero != null && _hero.GetSpeed()[0] < heroById.GetSpeed()[0])
+                            { // another hero has lower speed!
+                                __result = false;
+                                break;
+                            }
+                        }
+                    }
+                    else if (flag2 && ((medsCardToCheck.TargetSide == Enums.CardTargetSide.Enemy && medsCasterIsHero) || ((medsCardToCheck.TargetSide == Enums.CardTargetSide.Friend || (medsCardToCheck.TargetSide == Enums.CardTargetSide.FriendNotSelf && !flag5)) && !medsCasterIsHero)))
+                    { // enemies
+                        LogDebug("enemies");
+                        foreach (NPC _npc in teamNPC)
+                        {
+                            if (_npc != null && _npc.GetSpeed()[0] < npcById.GetSpeed()[0])
+                            { // another NPC has lower speed!
+                                __result = false;
+                                break;
+                            }
+                        }
+                    }
+                    else if (medsCardToCheck.TargetSide == Enums.CardTargetSide.Anyone)
+                    { // all
+                        LogDebug("anyone");
+                        int speed = flag1 ? heroById.GetSpeed()[0] : npcById.GetSpeed()[0];
+                        foreach (Hero _hero in teamHero)
+                        {
+                            if (_hero != null && _hero.GetSpeed()[0] < speed)
+                            { // a hero has lower speed!
+                                __result = false;
+                                break;
+                            }
+                        }
+                        foreach (NPC _npc in teamNPC)
+                        {
+                            if (_npc != null && _npc.GetSpeed()[0] < speed)
+                            { // an NPC has lower speed!
+                                __result = false;
+                                break;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        __result = false;
+                    }
+                    return false;
+                }
+                else if (medsCardToCheck.TargetPosition == Enums.CardTargetPosition.Fastest)
+                {
+                    __result = true;
+                    if (flag1 && (((medsCardToCheck.TargetSide == Enums.CardTargetSide.Friend || (medsCardToCheck.TargetSide == Enums.CardTargetSide.FriendNotSelf && !flag5)) && medsCasterIsHero) || (medsCardToCheck.TargetSide == Enums.CardTargetSide.Enemy && !medsCasterIsHero)))
+                    { // heroes
+                        foreach (Hero _hero in teamHero)
+                        {
+                            if (_hero != null && _hero.GetSpeed()[0] > heroById.GetSpeed()[0])
+                            { // another hero has higher speed!
+                                __result = false;
+                                break;
+                            }
+                        }
+                    }
+                    else if (flag2 && ((medsCardToCheck.TargetSide == Enums.CardTargetSide.Enemy && medsCasterIsHero) || ((medsCardToCheck.TargetSide == Enums.CardTargetSide.Friend || (medsCardToCheck.TargetSide == Enums.CardTargetSide.FriendNotSelf && !flag5)) && !medsCasterIsHero)))
+                    { // enemies
+                        foreach (NPC _npc in teamNPC)
+                        {
+                            if (_npc != null && _npc.GetSpeed()[0] > npcById.GetSpeed()[0])
+                            { // another NPC has higher speed!
+                                __result = false;
+                                break;
+                            }
+                        }
+                    }
+                    else if (medsCardToCheck.TargetSide == Enums.CardTargetSide.Anyone)
+                    { // all
+                        int speed = flag1 ? heroById.GetSpeed()[0] : npcById.GetSpeed()[0];
+                        foreach (Hero _hero in teamHero)
+                        {
+                            if (_hero != null && _hero.GetSpeed()[0] > speed)
+                            { // a hero has higher speed!
+                                __result = false;
+                                break;
+                            }
+                        }
+                        foreach (NPC _npc in teamNPC)
+                        {
+                            if (_npc != null && _npc.GetSpeed()[0] > speed)
+                            { // an NPC has higher speed!
+                                __result = false;
+                                break;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        __result = false;
+                    }
+                    return false;
+                }
+                if (medsCardToCheck.TargetSide == Enums.CardTargetSide.Friend)
+                    __result = flag1 & medsCasterIsHero || flag2 && !medsCasterIsHero;
+                if (medsCardToCheck.TargetSide == Enums.CardTargetSide.Enemy)
+                    __result = !(flag1 & medsCasterIsHero) && (!flag2 || medsCasterIsHero);
+                if (medsCardToCheck.TargetSide == Enums.CardTargetSide.FriendNotSelf)
+                    __result = flag1 & medsCasterIsHero && !flag5 || flag2 && !medsCasterIsHero && !flag5;
+                if (medsCardToCheck.TargetSide == Enums.CardTargetSide.Anyone)
+                    __result = true;
+                return false;
+            }
+            __result = false;
+            return false;
+        }
 
         /*[HarmonyPrefix]
         [HarmonyPatch(typeof(MatchManager), "CreatePet")]
