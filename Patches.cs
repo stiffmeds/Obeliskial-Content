@@ -1400,6 +1400,17 @@ namespace Obeliskial_Content
                 return true;
             Enums.CardClass result2 = Enums.CardClass.None;
             Enum.TryParse<Enums.CardClass>(Enum.GetName(typeof(Enums.HeroClass), (object)AtOManager.Instance.GetHero(__instance.heroIndex).HeroData.HeroSubClass.HeroClassSecondary), out result2);
+            if (result2 == Enums.CardClass.None)
+            {
+                if (AtOManager.Instance.GetHero(__instance.heroIndex).HaveTrait("addclasswarrior"))
+                    result2 = Enums.CardClass.Warrior;
+                else if (AtOManager.Instance.GetHero(__instance.heroIndex).HaveTrait("addclassscout"))
+                    result2 = Enums.CardClass.Scout;
+                else if (AtOManager.Instance.GetHero(__instance.heroIndex).HaveTrait("addclassmage"))
+                    result2 = Enums.CardClass.Mage;
+                else if (AtOManager.Instance.GetHero(__instance.heroIndex).HaveTrait("addclasshealer"))
+                    result2 = Enums.CardClass.Healer;
+            }
             List<string> stringList = new List<string>();
             if (AtOManager.Instance.advancedCraft)
             {
@@ -2001,6 +2012,18 @@ namespace Obeliskial_Content
                         Enum.TryParse<Enums.CardClass>(Enum.GetName(typeof(Enums.HeroClass), (object)hero.HeroData.HeroClass), out result1);
                         Enums.CardClass result2 = Enums.CardClass.None;
                         Enum.TryParse<Enums.CardClass>(Enum.GetName(typeof(Enums.HeroClass), (object)hero.HeroData.HeroSubClass.HeroClassSecondary), out result2);
+
+                        if (result2 == Enums.CardClass.None)
+                        {
+                            if (hero.HaveTrait("addclasswarrior"))
+                                result2 = Enums.CardClass.Warrior;
+                            else if (hero.HaveTrait("addclassscout"))
+                                result2 = Enums.CardClass.Scout;
+                            else if (hero.HaveTrait("addclassmage"))
+                                result2 = Enums.CardClass.Mage;
+                            else if (hero.HaveTrait("addclasshealer"))
+                                result2 = Enums.CardClass.Healer;
+                        }
                         int length = Traverse.Create(RewardsManagerInstance).Field("numCardsReward").GetValue<int>(); //int length = this.numCardsReward;
                         List<string> stringList1 = Globals.Instance.CardListNotUpgradedByClass[result1];
                         List<string> stringList2 = result2 == Enums.CardClass.None ? new List<string>() : Globals.Instance.CardListNotUpgradedByClass[result2];

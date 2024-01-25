@@ -61,7 +61,7 @@ namespace Obeliskial_Content
     [BepInProcess("AcrossTheObelisk.exe")]
     public class Content : BaseUnityPlugin
     {
-        internal const int ModDate = 20231217;
+        internal const int ModDate = 20240125;
         private readonly Harmony harmony = new(PluginInfo.PLUGIN_GUID);
         internal static ManualLogSource Log;
         public static Dictionary<string, CardData> medsCardsSource = new();
