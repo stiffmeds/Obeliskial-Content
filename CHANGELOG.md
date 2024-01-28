@@ -1,3 +1,8 @@
+# 1.2.0
+
+Support for slowest/fastest target on hero cards.
+New trait IDs: addclasswarrior, addclassscout, addclassmage, addclasshealer (adds secondary class when selected).
+
 # 1.1.0
 
 BREAKING CHANGE: custom content packs now require their own folder. I have reached out to all content pack authors to assist in updating their content (so hopefully most people won't even notice this?)
