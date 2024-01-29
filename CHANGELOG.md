@@ -1,3 +1,7 @@
+# 1.2.1
+
+Targetting fix (thanks @Falo Rowi!).
+
 # 1.2.0
 
 Support for slowest/fastest target on hero cards.

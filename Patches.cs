@@ -2612,8 +2612,8 @@ namespace Obeliskial_Content
             bool flag3 = false;
             bool flag4 = false;
             bool flag5 = false;
-            Hero heroById = __instance.GetHeroById(transform.name);
-            NPC npcById = __instance.GetNPCById(transform.name);
+            Hero heroById = __instance.GetHeroById(medsTransform.name);
+            NPC npcById = __instance.GetNPCById(medsTransform.name);
             if (medsCardToCheck.TargetType != Enums.CardTargetType.Global && (medsCasterIsHero && medsCardToCheck.EffectRepeatTarget != Enums.EffectRepeatTarget.Random && medsCardToCheck.TargetPosition != Enums.CardTargetPosition.Random || !medsCasterIsHero) && (medsCasterIsHero && npcById != null && npcById.HasEffect("stealth") || !medsCasterIsHero && heroById != null && heroById.HasEffect("stealth")))
             {
                 __result = false;
