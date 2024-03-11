@@ -1,3 +1,7 @@
+# 1.2.2
+
+Logging for Arrevax's Hanshek display issue.
+
 # 1.2.1
 
 Targetting fix (thanks @Falo Rowi!).

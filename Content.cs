@@ -61,7 +61,7 @@ namespace Obeliskial_Content
     [BepInProcess("AcrossTheObelisk.exe")]
     public class Content : BaseUnityPlugin
     {
-        internal const int ModDate = 20240130;
+        internal const int ModDate = 20240311;
         private readonly Harmony harmony = new(PluginInfo.PLUGIN_GUID);
         internal static ManualLogSource Log;
         public static Dictionary<string, CardData> medsCardsSource = new();
@@ -810,7 +810,11 @@ namespace Obeliskial_Content
                         {
                             newGO.name = medsGOR.NewGameObjectID;
                             Sprite newTexture = medsGOR.SpriteToUse.IsNullOrWhiteSpace() ? (Sprite)null : GetSprite(medsGOR.SpriteToUse);
+                            LogInfo("localScale: " + newGO.transform.localScale.ToString());
                             newGO.transform.localScale = new Vector3(newGO.transform.localScale.x * medsGOR.ScaleX * (medsGOR.Flip ? -1 : 1), newGO.transform.localScale.y * medsGOR.ScaleY, newGO.transform.localScale.z);
+                            LogInfo("Flip: " + medsGOR.Flip.ToString());
+                            LogInfo("Scale: " + medsGOR.ScaleX.ToString() + "," + medsGOR.ScaleY.ToString());
+                            LogInfo("NEW localScale: " + newGO.transform.localScale.ToString());
                             if (newTexture != null)
                             {
                                 try
